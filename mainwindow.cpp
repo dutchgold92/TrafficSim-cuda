@@ -7,15 +7,21 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    QElapsedTimer timer;
+    qint64 m_seconds;
+    timer.start();
+
     Model *m = new Model();
 
-    for(int i = 0; i < 1000; i++)
+    for(int i = 0; i < 10; i++)
     {
-        //m->display();
+        m->display();
         m->update();
     }
 
-    cout << "done" << endl;
+    m_seconds = timer.elapsed();
+
+    cout << "finished after: " << m_seconds << "ms" << endl;
 }
 
 MainWindow::~MainWindow()

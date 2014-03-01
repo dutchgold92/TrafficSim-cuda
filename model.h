@@ -1,7 +1,7 @@
 #ifndef MODEL_H
 #define MODEL_H
-#define DEFAULT_ROAD_COUNT 100;
-#define DEFAULT_ROAD_LENGTH 200
+#define DEFAULT_ROAD_COUNT 50;
+#define DEFAULT_ROAD_LENGTH 25000
 #define DEFAULT_VEHICLE_SPEED_LIMIT 5
 
 #include <iostream>
@@ -10,16 +10,7 @@
 #include <time.h>
 
 extern "C"
-void cuda_accelerate_rule(signed int *cells, signed int *temp_cells, unsigned int road_length, unsigned int max_speed);
-
-extern "C"
-void cuda_decelerate_rule(signed int* cells, signed int* temp_cells, unsigned int road_length);
-
-extern "C"
-void cuda_random_rule(signed int* cells, signed int* temp_cells, unsigned int road_length);
-
-extern "C"
-void cuda_progress_rule(signed int* cells, signed int* temp_cells, unsigned int road_length);
+void cuda_vehicle_rules(signed int* cells, unsigned int road_length, unsigned int max_speed);
 
 using namespace std;
 
@@ -40,11 +31,11 @@ private:
     void init();
     signed int** init_empty_cells();
     void init_vehicles();
-    void deallocate_cells(signed int** cells);
-    void accelerate_rule(signed int** cells);
-    void decelerate_rule(signed int** cells);
-    void random_rule(signed int** cells);
-    void progress_rule(signed int** cells);
+    void vehicle_rules();
+    void accelerate_rule();
+    void decelerate_rule();
+    void random_rule();
+    void progress_rule();
     unsigned int get_clearance_ahead(unsigned int road, unsigned int cell);
 };
 

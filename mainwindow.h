@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <model.h>
+#include <QElapsedTimer>
 
 namespace Ui {
 class MainWindow;

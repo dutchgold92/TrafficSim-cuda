@@ -4,7 +4,6 @@ Model::Model()
 {
     srand(time(NULL));
     this->init();
-    this->init_vehicles();
 }
 
 signed int** Model::get_cells()
@@ -32,6 +31,7 @@ void Model::init()
         this->road_lengths[i] = DEFAULT_ROAD_LENGTH;
 
     this->cells = this->init_empty_cells();
+    this->init_vehicles();
 }
 
 signed int** Model::init_empty_cells()
@@ -61,33 +61,13 @@ void Model::init_vehicles()
     }
 }
 
-void Model::deallocate_cells(signed int **cells)
-{
-    for(unsigned int i = 0; i < this->road_count; i++)
-        delete[] cells[i];
-
-    delete[] cells;
-}
-
 void Model::update()
 {
-    signed int** temp_cells = this->init_empty_cells();
-
-    for(unsigned int x = 0; x < this->road_count; x++)
-        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
-            temp_cells[x][y] = this->cells[x][y];
-
-    this->accelerate_rule(temp_cells);
-    this->decelerate_rule(temp_cells);
-    this->random_rule(temp_cells);
-
-    this->deallocate_cells(this->cells);
-    this->cells = temp_cells;
-    temp_cells = this->init_empty_cells();
-
-    this->progress_rule(temp_cells);
-    this->deallocate_cells(this->cells);
-    this->cells = temp_cells;
+//    this->vehicle_rules();
+    this->accelerate_rule();
+    this->decelerate_rule();
+    this->random_rule();
+    this->progress_rule();
 }
 
 void Model::display()
@@ -108,49 +88,49 @@ void Model::display()
     cout << endl;
 }
 
-void Model::accelerate_rule(signed int **cells)
+void Model::vehicle_rules()
 {
-//    for(unsigned int x = 0; x < this->road_count; x++)
-//    {
-//        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
-//        {
-//            if(this->cells[x][y] < 0)
-//                continue;  // skip empty
-//            else if(this->cells[x][y] < this->vehicle_speed_limit)
-//            {
-//                if(this->get_clearance_ahead(x, y) > (this->cells[x][y] + 1))
-//                    cells[x][y] = (this->cells[x][y] + 1);
-//            }
-//        }
-//    }
-
     for(unsigned int i = 0; i < this->road_count; i++)
-        cuda_accelerate_rule(this->cells[i], cells[i], this->road_lengths[i], this->vehicle_speed_limit);
+        cuda_vehicle_rules(this->cells[i], this->road_lengths[i], this->vehicle_speed_limit);
 }
 
-void Model::decelerate_rule(signed int **cells)
+void Model::accelerate_rule()
 {
-//    for(unsigned int x = 0; x < this->road_count; x++)
-//    {
-//        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
-//        {
-//            if(this->cells[x][y] < 0)
-//                continue;   // skip empty
-//            else if(this->cells[x][y] > 0)
-//            {
-//                unsigned int clearance = this->get_clearance_ahead(x, y);
-
-//                if(clearance <= this->cells[x][y])
-//                    cells[x][y] = (clearance - 1);
-//            }
-//        }
-//    }
-
-    for(unsigned int i = 0; i < this->road_count; i++)
-        cuda_decelerate_rule(this->cells[i], cells[i], this->road_lengths[i]);
+    for(unsigned int x = 0; x < this->road_count; x++)
+    {
+        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
+        {
+            if(this->cells[x][y] < 0)
+                continue;  // skip empty
+            else if(this->cells[x][y] < this->vehicle_speed_limit)
+            {
+                if(this->get_clearance_ahead(x, y) > (this->cells[x][y] + 1))
+                    this->cells[x][y]++;
+            }
+        }
+    }
 }
 
-void Model::random_rule(signed int **cells)
+void Model::decelerate_rule()
+{
+    for(unsigned int x = 0; x < this->road_count; x++)
+    {
+        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
+        {
+            if(this->cells[x][y] < 0)
+                continue;   // skip empty
+            else if(this->cells[x][y] > 0)
+            {
+                unsigned int clearance = this->get_clearance_ahead(x, y);
+
+                if(clearance <= this->cells[x][y])
+                    this->cells[x][y] = (clearance - 1);
+            }
+        }
+    }
+}
+
+void Model::random_rule()
 {
     for(unsigned int x = 0; x < this->road_count; x++)
     {
@@ -159,35 +139,32 @@ void Model::random_rule(signed int **cells)
             if(this->cells[x][y] > 0)
             {
                 if((rand() % 10) == 0)  // FIXME: shoddy workmanship!
-                    cells[x][y]--;
+                    this->cells[x][y]--;
             }
         }
     }
-
-//    for(unsigned int i = 0; i < this->road_count; i++)
-//        cuda_random_rule(this->cells[i], cells[i], this->road_lengths[i]);
 }
 
-void Model::progress_rule(signed int **cells)
+void Model::progress_rule()
 {
-//    for(unsigned int x = 0; x < this->road_count; x++)
-//    {
-//        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
-//        {
-//            if(this->cells[x][y] < 0)
-//                continue;   // skip empty
-//            else if(this->cells[x][y] >= 0)
-//            {
-//                unsigned int new_position = (y + this->cells[x][y]);
+    for(unsigned int x = 0; x < this->road_count; x++)
+    {
+        for(unsigned int y = this->road_lengths[x]; y--> 0;)
+        {
+            if(this->cells[x][y] <= 0)
+                continue;   // skip empty, skip stopped
+            else if(this->cells[x][y] > 0)
+            {
+                unsigned int new_position = (y + this->cells[x][y]);
 
-//                if(new_position < this->road_lengths[x])
-//                    cells[x][new_position] = this->cells[x][y];
-//            }
-//        }
-//    }
-
-    for(unsigned int i = 0; i < this->road_count; i++)
-        cuda_progress_rule(this->cells[i], cells[i], this->road_lengths[i]);
+                if(new_position < this->road_lengths[x])
+                {
+                    this->cells[x][new_position] = this->cells[x][y];
+                    this->cells[x][y] = -1;
+                }
+            }
+        }
+    }
 }
 
 unsigned int Model::get_clearance_ahead(unsigned int road, unsigned int cell)
