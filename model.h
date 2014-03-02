@@ -1,7 +1,9 @@
 #ifndef MODEL_H
 #define MODEL_H
-#define DEFAULT_ROAD_COUNT 50;
-#define DEFAULT_ROAD_LENGTH 25000
+//#define DEFAULT_ROAD_COUNT 50
+//#define DEFAULT_ROAD_LENGTH 25000
+#define DEFAULT_ROAD_COUNT 5
+#define DEFAULT_ROAD_LENGTH 50
 #define DEFAULT_VEHICLE_SPEED_LIMIT 5
 
 #include <iostream>
@@ -10,7 +12,7 @@
 #include <time.h>
 
 extern "C"
-void cuda_vehicle_rules(signed int* cells, unsigned int road_length, unsigned int max_speed);
+void cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int road_count, unsigned int max_speed);
 
 using namespace std;
 

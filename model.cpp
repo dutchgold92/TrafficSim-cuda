@@ -63,11 +63,11 @@ void Model::init_vehicles()
 
 void Model::update()
 {
-//    this->vehicle_rules();
-    this->accelerate_rule();
-    this->decelerate_rule();
-    this->random_rule();
-    this->progress_rule();
+    this->vehicle_rules();
+//    this->accelerate_rule();
+//    this->decelerate_rule();
+//    this->random_rule();
+//    this->progress_rule();
 }
 
 void Model::display()
@@ -90,8 +90,7 @@ void Model::display()
 
 void Model::vehicle_rules()
 {
-    for(unsigned int i = 0; i < this->road_count; i++)
-        cuda_vehicle_rules(this->cells[i], this->road_lengths[i], this->vehicle_speed_limit);
+    cuda_process_model(this->cells, this->road_lengths, this->road_count, this->vehicle_speed_limit);
 }
 
 void Model::accelerate_rule()

@@ -5,69 +5,111 @@
 
 using namespace std;
 
-__device__ unsigned int cuda_get_clearance(signed int* cells, unsigned int index, unsigned int road_length)
+__device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index, unsigned int road_index, unsigned int road_length)
 {
-    for(unsigned int i = (index + 1); i < road_length; i++)
+    for(unsigned int i = (index + 1), r_i = (road_index + 1); r_i < road_length; i++ && r_i++)
     {
         if(cells[i] >= 0)
-            return(i - index);
+            return(i - road_index);
     }
 
     return UINT_MAX;
 }
 
-__global__ void cuda_apply_vehicle_rules(signed int* cells, signed int* temp_cells, unsigned int road_length, unsigned int max_speed)
+__global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed)
 {
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int index = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int road = blockIdx.x;
+    unsigned int road_index = index;
+    unsigned int road_length = road_lengths[road];
 
-    if(i >= road_length)
+    for(unsigned int i = 0; i < road; i++)
+        road_index -= road_lengths[i];
+
+    if(road_index >= road_length)
         return;
 
-    if(cells[i] >= 0 && cells[i] < max_speed)   // accelerate
-        if(cuda_get_clearance(cells, i, road_length) > (cells[i] + 1))
-            cells[i]++;
+    if(cells[index] >= 0 && cells[index] < max_speed)   // accelerate
+        if(cuda_get_clearance(cells, index, road_index, road_length) > (cells[index] + 1))
+        {
+            __syncthreads();
+            cells[index]++;
+        }
 
-    if(cells[i] > 0)    // decelerate
+    if(cells[index] > 0)    // decelerate
     {
-        unsigned int clearance = cuda_get_clearance(cells, i, road_length);
+        unsigned int clearance = cuda_get_clearance(cells, index, road_index, road_length);
+        __syncthreads();
 
-        if(clearance <= cells[i])
-            cells[i] = (clearance - 1);
+        if(clearance <= cells[index])
+            cells[index] = (clearance - 1);
     }
 
-    if((cells[i] > 0) && false)    // random. FIXME: shoddy!
-        cells[i]--;
+    if((cells[index] > 0) && false)    // random. FIXME: shoddy!
+        cells[index]--;
 
-    if(cells[i] >= 0)   // progress
+    if(cells[index] >= 0)   // progress
     {
-        unsigned int new_position = (i + cells[i]);
-        temp_cells[i] = -1;
+        unsigned int new_position = (index + cells[index]);
+        unsigned int new_road_position = (road_index + cells[index]);
+        temp_cells[index] = -1;
 
-        if(new_position < road_length)
-            temp_cells[new_position] = cells[i];
+        if(new_road_position < road_length)
+            temp_cells[new_position] = cells[index];
     }
 }
 
 extern "C"
-void cuda_vehicle_rules(signed int* cells, unsigned int road_length, unsigned int max_speed);
+void cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed);
 
 extern "C"
-void cuda_vehicle_rules(signed int* cells, unsigned int road_length, unsigned int max_speed)
+void cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int road_count, unsigned int max_speed)
 {
     signed int *cells_d;
     signed int *temp_cells_d;
-    unsigned int size = (sizeof(cells_d) * road_length);
+    unsigned int *road_lengths_d;
+    unsigned int size = 0;
+    unsigned int max_road_length = 0;
+    unsigned int blocks;
 
-    cudaMalloc(&cells_d, size);
-    cudaMalloc(&temp_cells_d, size);
-    cudaMemcpy(cells_d, cells, size, cudaMemcpyHostToDevice);
-    cudaMemcpy(temp_cells_d, cells, size, cudaMemcpyHostToDevice);
+    for(unsigned int i = 0; i < road_count; i++)
+    {
+        size += road_lengths[i];
 
-    cuda_apply_vehicle_rules<<<(road_length / 10),32>>>(cells_d, temp_cells_d, road_length, max_speed);   // FIXME: should use floor or ceil perhaps for blocks?
+        if(road_lengths[i] > max_road_length)
+            max_road_length = road_lengths[i];
+    }
 
-    cudaMemcpy(cells, temp_cells_d, size, cudaMemcpyDeviceToHost);
+    size = size * sizeof(int);
+
+    blocks = ceil((float)max_road_length / 32.0);
+
+    cudaMalloc((void**)&cells_d, size);
+    cudaMalloc((void**)&temp_cells_d, size);
+    cudaMalloc((void**)&road_lengths_d, (sizeof(int) * road_count));
+
+    for(int i = 0; i < road_count; i++)
+    {
+        int add = 0;
+        cudaMemcpy((cells_d + add), cells[i], (sizeof(int) * road_lengths[i]), cudaMemcpyHostToDevice);
+        cudaMemcpy((temp_cells_d + add), cells[i], (sizeof(int) * road_lengths[i]), cudaMemcpyHostToDevice);
+        add += road_lengths[i];
+    }
+
+    cudaMemcpy(road_lengths_d, road_lengths, (sizeof(int) * road_count), cudaMemcpyHostToDevice);
+
+    cuda_apply_rules<<<blocks, 32>>>(cells_d, temp_cells_d, road_lengths_d, road_count, max_speed); // FIXME: will run out of threads
+
+    for(int i = 0; i < road_count; i++)
+    {
+        int add = 0;
+        cudaMemcpy(cells[i], (temp_cells_d + add), (sizeof(int) * road_lengths[i]), cudaMemcpyDeviceToHost);
+        add += road_lengths[i];
+    }
+
     cudaFree(cells_d);
     cudaFree(temp_cells_d);
+    cudaFree(road_lengths_d);
 
-    //cout << cudaGetErrorString(cudaGetLastError()) << endl;
+//    cout << cudaGetErrorString(cudaGetLastError()) << endl;
 }
