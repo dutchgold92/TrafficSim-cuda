@@ -74,6 +74,9 @@ void Model::update()
 //    this->decelerate_rule();
 //    this->random_rule();
 //    this->progress_rule();
+
+//    this->get_model_density();
+    cuda_get_model_density(this->cells, this->road_lengths, this->max_road_length, this->road_count);
 }
 
 void Model::display()
@@ -97,6 +100,44 @@ void Model::display()
 void Model::vehicle_rules()
 {
     cuda_process_model(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit);
+}
+
+void Model::synthesize_traffic()
+{
+
+}
+
+float Model::get_model_density()
+{
+    float vehicles = 0;
+    float cells = 0;
+
+    for(unsigned int x = 0; x < this->road_count; x++)
+    {
+        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
+        {
+            if(this->cells[x][y] >= 0)
+                vehicles++;
+        }
+
+        cells += this->road_lengths[x];
+    }
+
+    return(vehicles / cells);
+}
+
+float Model::get_road_density(unsigned int road_index)
+{
+    if(road_index >= this->road_count)
+        return 0;
+
+    float vehicles = 0;
+
+    for(unsigned int i = 0; i < this->road_lengths[road_index]; i++)
+        if(this->cells[road_index][i] >= 0)
+            vehicles++;
+
+    return(vehicles / (float)this->road_lengths[road_index]);
 }
 
 void Model::accelerate_rule()
