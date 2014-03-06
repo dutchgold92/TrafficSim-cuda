@@ -26,6 +26,7 @@ void Model::init()
     this->road_count = DEFAULT_ROAD_COUNT;
     this->road_lengths = new unsigned int[this->road_count];
     this->vehicle_speed_limit = DEFAULT_VEHICLE_SPEED_LIMIT;
+    this->desired_density = DEFAULT_DESIRED_DENSITY;
 
     for(unsigned int i = 0; i < this->road_count; i++)
         this->road_lengths[i] = DEFAULT_ROAD_LENGTH;
@@ -75,8 +76,7 @@ void Model::update()
 //    this->random_rule();
 //    this->progress_rule();
 
-//    this->get_model_density();
-    cuda_get_model_density(this->cells, this->road_lengths, this->max_road_length, this->road_count);
+    this->synthesize_traffic();
 }
 
 void Model::display()
@@ -104,7 +104,22 @@ void Model::vehicle_rules()
 
 void Model::synthesize_traffic()
 {
+    unsigned int iterations = 0;
 
+    while(this->get_model_density() < this->desired_density && iterations < (this->road_count * this->road_count))
+    {
+        unsigned int road = (rand() % this->road_count);
+
+        for(unsigned int i = this->vehicle_speed_limit; i < this->road_lengths[road] && i-->0;)
+        {
+            if(this->cells[road][i] >= 0)
+                continue;
+            else
+                this->cells[road][i] = 1;
+        }
+
+        iterations++;
+    }
 }
 
 float Model::get_model_density()

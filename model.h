@@ -1,10 +1,11 @@
 #ifndef MODEL_H
 #define MODEL_H
-#define DEFAULT_ROAD_COUNT 100
-#define DEFAULT_ROAD_LENGTH 50000
-//#define DEFAULT_ROAD_COUNT 3
-//#define DEFAULT_ROAD_LENGTH 60
+//#define DEFAULT_ROAD_COUNT 100
+//#define DEFAULT_ROAD_LENGTH 50000
+#define DEFAULT_ROAD_COUNT 3
+#define DEFAULT_ROAD_LENGTH 60
 #define DEFAULT_VEHICLE_SPEED_LIMIT 5
+#define DEFAULT_DESIRED_DENSITY 0.2
 
 #include <iostream>
 #include <limits>
@@ -36,6 +37,7 @@ private:
     unsigned int *road_lengths;
     unsigned int vehicle_speed_limit;
     unsigned int max_road_length;
+    float desired_density;
     void init();
     signed int** init_empty_cells();
     void init_vehicles();
