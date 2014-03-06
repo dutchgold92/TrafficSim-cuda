@@ -32,6 +32,12 @@ void Model::init()
 
     this->cells = this->init_empty_cells();
     this->init_vehicles();
+
+    this->max_road_length = 0;
+
+    for(unsigned int i = 0; i < this->road_count; i++)
+        if(this->road_lengths[i] > this->max_road_length)
+            this->max_road_length = this->road_lengths[i];
 }
 
 signed int** Model::init_empty_cells()
@@ -90,7 +96,7 @@ void Model::display()
 
 void Model::vehicle_rules()
 {
-    cuda_process_model(this->cells, this->road_lengths, this->road_count, this->vehicle_speed_limit);
+    cuda_process_model(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit);
 }
 
 void Model::accelerate_rule()

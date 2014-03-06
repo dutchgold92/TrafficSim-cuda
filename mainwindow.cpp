@@ -13,9 +13,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     Model *m = new Model();
 
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < 100; i++)
     {
-        m->display();
+//        m->display();
         m->update();
     }
 

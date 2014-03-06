@@ -16,10 +16,10 @@ __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index
     return UINT_MAX;
 }
 
-__global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed)
+__global__ void cuda_apply_rules(unsigned int block_count, signed int *cells, signed int *temp_cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed)
 {
     unsigned int index = threadIdx.x + blockIdx.x * blockDim.x;
-    unsigned int road = blockIdx.x;
+    unsigned int road = (blockIdx.x / block_count);
     unsigned int road_index = index;
     unsigned int road_length = road_lengths[road];
 
@@ -60,28 +60,21 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
 }
 
 extern "C"
-void cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed);
+void cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed);
 
 extern "C"
-void cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int road_count, unsigned int max_speed)
+void cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed)
 {
     signed int *cells_d;
     signed int *temp_cells_d;
     unsigned int *road_lengths_d;
-    unsigned int size = 0;
-    unsigned int max_road_length = 0;
     unsigned int blocks;
+    unsigned int size = 0;
 
     for(unsigned int i = 0; i < road_count; i++)
-    {
         size += road_lengths[i];
 
-        if(road_lengths[i] > max_road_length)
-            max_road_length = road_lengths[i];
-    }
-
     size = size * sizeof(int);
-
     blocks = ceil((float)max_road_length / 32.0);
 
     cudaMalloc((void**)&cells_d, size);
@@ -98,7 +91,7 @@ void cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned
 
     cudaMemcpy(road_lengths_d, road_lengths, (sizeof(int) * road_count), cudaMemcpyHostToDevice);
 
-    cuda_apply_rules<<<blocks, 32>>>(cells_d, temp_cells_d, road_lengths_d, road_count, max_speed); // FIXME: will run out of threads
+    cuda_apply_rules<<<blocks, 32>>>(blocks, cells_d, temp_cells_d, road_lengths_d, road_count, max_speed); // FIXME: will run out of threads
 
     for(int i = 0; i < road_count; i++)
     {
