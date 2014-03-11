@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     for(int i = 0; i < 10; i++)
     {
-        m->display();
+//        m->display();
         m->update();
     }
 

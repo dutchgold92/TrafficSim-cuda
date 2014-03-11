@@ -1,9 +1,9 @@
 #ifndef MODEL_H
 #define MODEL_H
-//#define DEFAULT_ROAD_COUNT 100
-//#define DEFAULT_ROAD_LENGTH 50000
-#define DEFAULT_ROAD_COUNT 3
-#define DEFAULT_ROAD_LENGTH 60
+#define DEFAULT_ROAD_COUNT 50
+#define DEFAULT_ROAD_LENGTH 25000
+//#define DEFAULT_ROAD_COUNT 3
+//#define DEFAULT_ROAD_LENGTH 60
 #define DEFAULT_VEHICLE_SPEED_LIMIT 5
 #define DEFAULT_DESIRED_DENSITY 0.2
 
@@ -13,10 +13,7 @@
 #include <time.h>
 
 extern "C"
-void cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed);
-
-extern "C"
-float cuda_get_model_density(signed int **cells, unsigned int *road_lengths, unsigned int max_road_length, unsigned int road_count);
+float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed);
 
 using namespace std;
 
@@ -38,6 +35,7 @@ private:
     unsigned int vehicle_speed_limit;
     unsigned int max_road_length;
     float desired_density;
+    float model_density;
     void init();
     signed int** init_empty_cells();
     void init_vehicles();

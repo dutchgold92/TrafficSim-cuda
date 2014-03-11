@@ -76,7 +76,7 @@ void Model::update()
 //    this->random_rule();
 //    this->progress_rule();
 
-    this->synthesize_traffic();
+//    this->synthesize_traffic();
 }
 
 void Model::display()
@@ -94,12 +94,14 @@ void Model::display()
         cout << endl;
     }
 
+//    cout << "Model density: " << this->model_density << endl;
+
     cout << endl;
 }
 
 void Model::vehicle_rules()
 {
-    cuda_process_model(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit);
+    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit);
 }
 
 void Model::synthesize_traffic()
@@ -124,21 +126,23 @@ void Model::synthesize_traffic()
 
 float Model::get_model_density()
 {
-    float vehicles = 0;
-    float cells = 0;
+    return this->model_density;
 
-    for(unsigned int x = 0; x < this->road_count; x++)
-    {
-        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
-        {
-            if(this->cells[x][y] >= 0)
-                vehicles++;
-        }
+//    float vehicles = 0;
+//    float cells = 0;
 
-        cells += this->road_lengths[x];
-    }
+//    for(unsigned int x = 0; x < this->road_count; x++)
+//    {
+//        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
+//        {
+//            if(this->cells[x][y] >= 0)
+//                vehicles++;
+//        }
 
-    return(vehicles / cells);
+//        cells += this->road_lengths[x];
+//    }
+
+//    return(vehicles / cells);
 }
 
 float Model::get_road_density(unsigned int road_index)
