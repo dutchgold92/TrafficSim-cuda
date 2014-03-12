@@ -2,12 +2,32 @@
 #include <cuda.h>
 #include <stdio.h>
 #include <limits.h>
-#include <thrust/count.h>
-#include <thrust/device_vector.h>
+#include <thrust/random.h>
 
 #define THREADS_PER_BLOCK 32
 
 using namespace std;
+
+__device__
+unsigned int cuda_hash(unsigned int a)
+{
+    a = (a+0x7ed55d16) + (a<<12);
+    a = (a^0xc761c23c) ^ (a>>19);
+    a = (a+0x165667b1) + (a<<5);
+    a = (a+0xd3a2646c) ^ (a<<9);
+    a = (a+0xfd7046c5) + (a<<3);
+    a = (a^0xb55a4f09) ^ (a>>16);
+    return a;
+}
+
+__device__
+float cuda_get_random(unsigned int seed_input)
+{
+    unsigned int seed = cuda_hash(seed_input);
+    thrust::default_random_engine rng(seed);
+    thrust::uniform_real_distribution<float> random(0,1);
+    return random(rng);
+}
 
 __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index, unsigned int road_index, unsigned int road_length)
 {
@@ -20,7 +40,7 @@ __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index
     return UINT_MAX;
 }
 
-__global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed, unsigned int *vehicle_counts)
+__global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed, unsigned int *vehicle_counts, unsigned int *seeds)
 {
     unsigned int index = threadIdx.x + blockIdx.x * blockDim.x;
     unsigned int road = UINT_MAX;
@@ -62,7 +82,7 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
             cells[index] = (clearance - 1);
     }
 
-    if((cells[index] > 0) && false)    // random. FIXME: shoddy!
+    if((cells[index] > 0) && (cuda_get_random(seeds[index] * threadIdx.x) <= 0.2))    // random
         cells[index]--;
 
     if(cells[index] >= 0)   // progress
@@ -98,19 +118,25 @@ float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigne
     unsigned int vehicle_count = 0;
     unsigned int *vehicle_counts = new unsigned int[road_count];
     unsigned int *vehicle_counts_d;
+    unsigned int *seeds;
+    unsigned int *seeds_d;
 
     for(unsigned int i = 0; i < road_count; i++)
     {
         cell_count += road_lengths[i];
         vehicle_counts[i] = 0;
     }
-
     size = cell_count * sizeof(int);
+
+    seeds = new unsigned int[cell_count];
+    for(int i = 0; i < cell_count; i++)
+        seeds[i] = rand() % 10000;
 
     cudaMalloc((void**)&cells_d, size);
     cudaMalloc((void**)&temp_cells_d, size);
     cudaMalloc((void**)&road_lengths_d, (sizeof(int) * road_count));
     cudaMalloc((void**)&vehicle_counts_d, (sizeof(int) * road_count));
+    cudaMalloc((void**)&seeds_d, size);
 
     int *cells_d_ptr = &cells_d[0];
     int *temp_cells_d_ptr = &temp_cells_d[0];
@@ -125,8 +151,9 @@ float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigne
 
     cudaMemcpy(road_lengths_d, road_lengths, (sizeof(int) * road_count), cudaMemcpyHostToDevice);
     cudaMemcpy(vehicle_counts_d, vehicle_counts, (sizeof(int) * road_count), cudaMemcpyHostToDevice);
+    cudaMemcpy(seeds_d, seeds, size, cudaMemcpyHostToDevice);
 
-    cuda_apply_rules<<<(blocks_per_road * road_count), THREADS_PER_BLOCK>>>(cells_d, temp_cells_d, road_lengths_d, road_count, max_speed, vehicle_counts_d);
+    cuda_apply_rules<<<(blocks_per_road * road_count), THREADS_PER_BLOCK>>>(cells_d, temp_cells_d, road_lengths_d, road_count, max_speed, vehicle_counts_d, seeds_d);
 
     temp_cells_d_ptr = &temp_cells_d[0];
 
@@ -137,7 +164,6 @@ float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigne
     }
 
     cudaMemcpy(vehicle_counts, vehicle_counts_d, (sizeof(int) * road_count), cudaMemcpyDeviceToHost);
-
     for(unsigned int i = 0; i < road_count; i++)
         vehicle_count += vehicle_counts[i];
 
@@ -145,7 +171,9 @@ float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigne
     cudaFree(temp_cells_d);
     cudaFree(road_lengths_d);
     cudaFree(vehicle_counts_d);
+    cudaFree(seeds_d);
     delete[] vehicle_counts;
+    delete[] seeds;
 
 //    cout << cudaGetErrorString(cudaGetLastError()) << endl;
     return((float)vehicle_count / (float)cell_count);
