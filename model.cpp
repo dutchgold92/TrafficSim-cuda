@@ -39,6 +39,23 @@ void Model::init()
     for(unsigned int i = 0; i < this->road_count; i++)
         if(this->road_lengths[i] > this->max_road_length)
             this->max_road_length = this->road_lengths[i];
+
+    this->init_road_links();
+}
+
+void Model::init_road_links()
+{
+    road_link r1;
+    r1.origin_road = 0;
+    r1.destination_road = 1;
+    road_link r2;
+    r2.origin_road = 0;
+    r2.destination_road = 2;
+
+    this->road_link_count = 2;
+    this->road_links = new road_link[this->road_link_count];
+    this->road_links[0] = r1;
+    this->road_links[1] = r2;
 }
 
 signed int** Model::init_empty_cells()
@@ -101,7 +118,7 @@ void Model::display()
 
 void Model::vehicle_rules()
 {
-    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit);
+    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_links, this->road_link_count);
 }
 
 void Model::synthesize_traffic()

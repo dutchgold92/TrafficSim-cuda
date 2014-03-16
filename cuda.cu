@@ -82,7 +82,11 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
             cells[index] = (clearance - 1);
     }
 
+<<<<<<< HEAD
     if((cells[index] > 0) && (cuda_get_random(random_seed * threadIdx.x) <= 0.2)) // random
+=======
+    if((cells[index] > 0) && (cuda_get_random(random_seed * threadIdx.x) <= 0.2))    // random
+>>>>>>> 4b2569e901960fd3d522a5496830652dce2ff7ce
         cells[index]--;
 
     if(cells[index] >= 0) // progress

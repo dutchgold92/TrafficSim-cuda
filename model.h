@@ -7,13 +7,14 @@
 #define DEFAULT_VEHICLE_SPEED_LIMIT 5
 #define DEFAULT_DESIRED_DENSITY 0.2
 
+#include <roadlink.h>
 #include <iostream>
 #include <limits>
 #include <stdlib.h>
 #include <time.h>
 
 extern "C"
-float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed);
+float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed, road_link *road_links, unsigned int road_link_count);
 
 using namespace std;
 
@@ -30,13 +31,16 @@ public:
     void display();
 private:
     signed int **cells;
+    road_link *road_links;
     unsigned int road_count;
+    unsigned int road_link_count;
     unsigned int *road_lengths;
     unsigned int vehicle_speed_limit;
     unsigned int max_road_length;
     float desired_density;
     float model_density;
     void init();
+    void init_road_links();
     signed int** init_empty_cells();
     void init_vehicles();
     void synthesize_traffic();

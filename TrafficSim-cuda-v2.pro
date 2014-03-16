@@ -17,7 +17,8 @@ SOURCES += main.cpp\
     model.cpp
 
 HEADERS  += mainwindow.h \
-    model.h
+    model.h \
+    roadlink.h
 
 FORMS    += mainwindow.ui
 
