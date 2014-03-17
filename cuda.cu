@@ -72,6 +72,15 @@ __device__ signed int cuda_get_next_road(unsigned int road, road_link *road_link
     return -1;
 }
 
+__device__ signed int cuda_get_road_link(unsigned int origin_road, unsigned int destination_road, road_link *road_links, unsigned int road_link_count)
+{
+    for(unsigned int i = 0; i < road_link_count; i++)
+        if(road_links[i].origin_road == origin_road && road_links[i].destination_road == destination_road)
+            return i;
+
+    return -1;
+}
+
 __device__ unsigned int cuda_get_first_index_of_road(unsigned int road, unsigned int *road_lengths)
 {
     unsigned int index = 0;
@@ -85,6 +94,7 @@ __device__ unsigned int cuda_get_first_index_of_road(unsigned int road, unsigned
 __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index, unsigned int road, unsigned int road_index, unsigned int road_length, unsigned int *road_lengths, road_link *road_links, unsigned int road_link_count)
 {
     unsigned int clearance = 0;
+    signed int next_road;
 
     for(unsigned int i = (index + 1), r_i = (road_index + 1); r_i < road_length; i++ && r_i++)
     {
@@ -94,13 +104,18 @@ __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index
             return(clearance);
         else if(r_i == road_length)
         {
-            signed int road = cuda_get_next_road(road, road_links, road_link_count);
+            next_road = cuda_get_next_road(road, road_links, road_link_count);
 
-            if(road >= 0)
+            if(next_road >= 0)
             {
-                r_i = 0;
-                road_length = road_lengths[road];
-                i = cuda_get_first_index_of_road(road, road_lengths);
+                if(!road_links[cuda_get_road_link(road, next_road, road_links, road_link_count)].active)
+                    return(clearance);
+                else
+                {
+                    r_i = 0;
+                    road_length = road_lengths[next_road];
+                    i = cuda_get_first_index_of_road(next_road, road_lengths);
+                }
             }
         }
     }
