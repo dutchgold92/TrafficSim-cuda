@@ -3,7 +3,7 @@
 //#define DEFAULT_ROAD_COUNT 100
 //#define DEFAULT_ROAD_LENGTH 50000
 #define DEFAULT_ROAD_COUNT 3
-#define DEFAULT_ROAD_LENGTH 60
+#define DEFAULT_ROAD_LENGTH 30
 #define DEFAULT_VEHICLE_SPEED_LIMIT 5
 #define DEFAULT_DESIRED_DENSITY 0.2
 
@@ -12,9 +12,13 @@
 #include <limits>
 #include <stdlib.h>
 #include <time.h>
+#include <vector>
 
 extern "C"
-float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed, road_link *road_links, unsigned int road_link_count);
+void cuda_init(road_link *road_links, unsigned int road_link_count);
+
+extern "C"
+float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed, unsigned int road_link_count);
 
 using namespace std;
 
@@ -51,6 +55,7 @@ private:
     void random_rule();
     void progress_rule();
     unsigned int get_clearance_ahead(unsigned int road, unsigned int cell);
+    void toggle_road_links();
 };
 
 #endif // MODEL_H

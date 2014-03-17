@@ -41,6 +41,7 @@ void Model::init()
             this->max_road_length = this->road_lengths[i];
 
     this->init_road_links();
+    cuda_init(this->road_links, this->road_link_count);
 }
 
 void Model::init_road_links()
@@ -48,9 +49,11 @@ void Model::init_road_links()
     road_link r1;
     r1.origin_road = 0;
     r1.destination_road = 1;
+    r1.active = false;
     road_link r2;
     r2.origin_road = 0;
     r2.destination_road = 2;
+    r2.active = true;
 
     this->road_link_count = 2;
     this->road_links = new road_link[this->road_link_count];
@@ -79,7 +82,7 @@ void Model::init_vehicles()
     {
         for(unsigned int y = 0; y < this->road_lengths[x]; y++)
         {
-            if(y < 5)    // FIXME: shoddy workmanship! COWBOYS!
+            if(x == 0 && y < 5)    // FIXME: shoddy workmanship! COWBOYS!
                 this->cells[x][y] = 0;
         }
     }
@@ -118,7 +121,7 @@ void Model::display()
 
 void Model::vehicle_rules()
 {
-    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_links, this->road_link_count);
+    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_link_count);
 }
 
 void Model::synthesize_traffic()
@@ -258,4 +261,34 @@ unsigned int Model::get_clearance_ahead(unsigned int road, unsigned int cell)
     }
 
     return numeric_limits<unsigned int>::max();
+}
+
+void Model::toggle_road_links()
+{
+    vector<road_link*> links;
+
+    for(unsigned int x = 0; x < this->road_count; x++)
+    {
+        for(unsigned int y = 0; y < this->road_link_count; y++)
+        {
+            if(this->road_links[y].origin_road == x)
+                links.push_back(&this->road_links[y]);
+        }
+
+        if(!links.empty())
+        {
+            unsigned int new_active_index = (rand() % links.size());
+            links.at(new_active_index)->active = true;
+
+            for(unsigned int i = 0; i < links.size(); i++)
+            {
+                if(i == new_active_index)
+                    continue;
+                else
+                    links.at(i)->active = false;
+            }
+
+            links.clear();
+        }
+    }
 }
