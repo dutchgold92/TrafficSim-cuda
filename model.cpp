@@ -24,7 +24,7 @@ unsigned int* Model::get_road_lengths()
 void Model::init()
 {
     this->generation = 0;
-    this->road_count = DEFAULT_ROAD_COUNT;
+    this->road_count = 12;
     this->road_directions = new Direction[this->road_count];
     this->road_lengths = new unsigned int[this->road_count];
     this->vehicle_speed_limit = DEFAULT_VEHICLE_SPEED_LIMIT;
@@ -48,32 +48,122 @@ void Model::init_roads()
 //    for(unsigned int i = 0; i < this->road_count; i++)
 //        this->road_lengths[i] = DEFAULT_ROAD_LENGTH;
 
-    this->road_lengths[0] = 50;
-    this->road_lengths[1] = 10;
-    this->road_lengths[2] = 30;
-
+    this->road_lengths[0] = 25;
     this->road_directions[0] = this->Right;
-    this->road_directions[1] = this->Down;
+    this->road_lengths[1] = 25;
+    this->road_directions[1] = this->Up;
+    this->road_lengths[2] = 25;
     this->road_directions[2] = this->Right;
+    this->road_lengths[3] = 25;
+    this->road_directions[3] = this->Down;
+    this->road_lengths[4] = 5;
+    this->road_directions[4] = this->Up;
+    this->road_lengths[5] = 25;
+    this->road_directions[5] = this->Right;
+    this->road_lengths[6] = 25;
+    this->road_directions[6] = this->Right;
+    this->road_lengths[7] = 5;
+    this->road_directions[7] = this->Down;
+    this->road_lengths[8] = 25;
+    this->road_directions[8] = this->Right;
+    this->road_lengths[9] = 25;
+    this->road_directions[9] = this->Down;
+    this->road_lengths[10] = 25;
+    this->road_directions[10] = this->Left;
+    this->road_lengths[11] = 10;
+    this->road_directions[11] = this->Down;
 
     this->cells = this->init_empty_cells();
 }
 
 void Model::init_road_links()
 {
+    road_link r0;
+    r0.origin_road = 0;
+    r0.destination_road = 2;
+    r0.active = true;
+
     road_link r1;
-    r1.origin_road = 0;
-    r1.destination_road = 1;
+    r1.origin_road = 1;
+    r1.destination_road = 2;
     r1.active = false;
+
     road_link r2;
-    r2.origin_road = 0;
-    r2.destination_road = 2;
+    r2.origin_road = 2;
+    r2.destination_road = 3;
     r2.active = true;
 
-    this->road_link_count = 2;
+    road_link r3;
+    r3.origin_road = 2;
+    r3.destination_road = 4;
+    r3.active = false;
+
+    road_link r4;
+    r4.origin_road = 2;
+    r4.destination_road = 5;
+    r4.active = false;
+
+    road_link r5;
+    r5.origin_road = 4;
+    r5.destination_road = 6;
+    r5.active = true;
+
+    road_link r6;
+    r6.origin_road = 6;
+    r6.destination_road = 7;
+    r6.active = false;
+
+    road_link r7;
+    r7.origin_road = 5;
+    r7.destination_road = 8;
+    r7.active = true;
+
+    road_link r8;
+    r8.origin_road = 7;
+    r8.destination_road = 8;
+    r8.active = true;
+
+    road_link r9;
+    r9.origin_road = 5;
+    r9.destination_road = 9;
+    r9.active = false;
+
+    road_link r10;
+    r10.origin_road = 7;
+    r10.destination_road = 9;
+    r10.active = false;
+
+    road_link r11;
+    r11.origin_road = 9;
+    r11.destination_road = 10;
+    r11.active = true;
+
+    road_link r12;
+    r12.origin_road = 10;
+    r12.destination_road = 11;
+    r12.active = true;
+
+    road_link r13;
+    r13.origin_road = 3;
+    r13.destination_road = 11;
+    r13.active = false;
+
+    this->road_link_count = 14;
     this->road_links = new road_link[this->road_link_count];
-    this->road_links[0] = r1;
-    this->road_links[1] = r2;
+    this->road_links[0] = r0;
+    this->road_links[1] = r1;
+    this->road_links[2] = r2;
+    this->road_links[3] = r3;
+    this->road_links[4] = r4;
+    this->road_links[5] = r5;
+    this->road_links[6] = r6;
+    this->road_links[7] = r7;
+    this->road_links[8] = r8;
+    this->road_links[9] = r9;
+    this->road_links[10] = r10;
+    this->road_links[11] = r11;
+    this->road_links[12] = r12;
+    this->road_links[13] = r13;
 }
 
 signed int** Model::init_empty_cells()

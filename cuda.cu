@@ -21,7 +21,7 @@ void cuda_init(road_link *road_links, unsigned int road_link_count)
     cudaMemcpy(road_links_d, road_links, (sizeof(road_link) * road_link_count), cudaMemcpyHostToDevice);
 }
 
-__global__ void cuda_toggle_road_links(road_link *road_links, unsigned int road_link_count)
+__device__ void cuda_toggle_road_links_by_origin(road_link *road_links, unsigned int road_link_count)
 {
     bool toggled = false;
 
@@ -43,6 +43,34 @@ __global__ void cuda_toggle_road_links(road_link *road_links, unsigned int road_
     }
 }
 
+__device__ void cuda_toggle_road_links_by_destination(road_link *road_links, unsigned int road_link_count)
+{
+    bool toggled = false;
+
+    for(unsigned int loops = 0; loops < 2; loops++)
+    {
+        for(unsigned int i = 0; i < road_link_count; i++)
+        {
+            if(!toggled && road_links[i].destination_road == blockIdx.x && road_links[i].active)
+            {
+                road_links[i].active = false;
+                toggled = true;
+            }
+            else if(toggled && road_links[i].destination_road == blockIdx.x)
+            {
+                road_links[i].active = true;
+                return;
+            }
+        }
+    }
+}
+
+__global__ void cuda_toggle_road_links(road_link *road_links, unsigned int road_link_count)
+{
+    cuda_toggle_road_links_by_origin(road_links, road_link_count);
+    cuda_toggle_road_links_by_destination(road_links, road_link_count);
+}
+
 __device__ unsigned int cuda_hash(unsigned int a)
 {
     a = (a+0x7ed55d16) + (a<<12);
@@ -62,15 +90,21 @@ __device__ float cuda_get_random(unsigned int seed_input)
     return random(rng);
 }
 
+/**
+ * Returns index of next open road.
+ * Returns -1 if no next road is open, or -2 if there is no next road.
+ */
 __device__ signed int cuda_get_next_road(unsigned int road, road_link *road_links, unsigned int road_link_count)
 {
     for(unsigned int i = 0; i < road_link_count; i++)
-    {
         if(road_links[i].active && road_links[i].origin_road == road)
             return road_links[i].destination_road;
-    }
 
-    return -1;
+    for(unsigned int i = 0; i < road_link_count; i++)
+        if(road_links[i].origin_road == road)
+            return -1;
+
+    return -2;
 }
 
 __device__ signed int cuda_get_road_link(unsigned int origin_road, unsigned int destination_road, road_link *road_links, unsigned int road_link_count)
@@ -92,32 +126,31 @@ __device__ unsigned int cuda_get_first_index_of_road(unsigned int road, unsigned
     return index;
 }
 
-__device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index, unsigned int road, unsigned int road_index, unsigned int road_length, unsigned int *road_lengths, road_link *road_links, unsigned int road_link_count)
+__device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index, unsigned int road, unsigned int road_index, unsigned int road_length, unsigned int *road_lengths, road_link *road_links, unsigned int road_link_count, unsigned int max_speed)
 {
     unsigned int clearance = 0;
     signed int next_road;
 
-    for(unsigned int i = (index + 1), r_i = (road_index + 1); r_i < road_length; i++ && r_i++)
+    for(unsigned int i = (index + 1), r_i = (road_index + 1); r_i < road_length && clearance <= max_speed; i++ && r_i++)
     {
         clearance++;
 
         if(cells[i] >= 0)
             return(clearance);
-        else if(r_i == road_length)
+        else if(r_i == (road_length - 1))
         {
             next_road = cuda_get_next_road(road, road_links, road_link_count);
 
             if(next_road >= 0)
             {
-                if(!road_links[cuda_get_road_link(road, next_road, road_links, road_link_count)].active)
-                    return(clearance);
-                else
-                {
-                    r_i = 0;
-                    road_length = road_lengths[next_road];
-                    i = cuda_get_first_index_of_road(next_road, road_lengths);
-                }
+                r_i = 0;
+                road_length = road_lengths[next_road];
+                i = cuda_get_first_index_of_road(next_road, road_lengths);
             }
+            else if(next_road == -1)
+                return clearance;
+            else if(next_road == -2)
+                return UINT_MAX;
         }
     }
 
@@ -151,7 +184,7 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
         road_index -= road_lengths[i];
 
     if(cells[index] >= 0 && cells[index] < max_speed) // accelerate
-        if(cuda_get_clearance(cells, index, road, road_index, road_length, road_lengths, road_links, road_link_count) > (cells[index] + 1))
+        if(cuda_get_clearance(cells, index, road, road_index, road_length, road_lengths, road_links, road_link_count, max_speed) > (cells[index] + 1))
         {
             __syncthreads();
             cells[index]++;
@@ -159,7 +192,7 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
 
     if(cells[index] > 0) // decelerate
     {
-        unsigned int clearance = cuda_get_clearance(cells, index, road, road_index, road_length, road_lengths, road_links, road_link_count);
+        unsigned int clearance = cuda_get_clearance(cells, index, road, road_index, road_length, road_lengths, road_links, road_link_count, max_speed);
         __syncthreads();
 
         if(clearance <= cells[index])

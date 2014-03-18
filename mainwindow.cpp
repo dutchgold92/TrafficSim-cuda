@@ -80,6 +80,9 @@ void MainWindow::draw_model()
 
 void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal x, qreal y)
 {
+    qreal start_x = x;
+    qreal start_y = y;
+
     if(this->rendered_road_generations[road_index] > this->model->get_generation())
         return;
 
@@ -120,7 +123,7 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
     }
     else
     {
-        for(unsigned int i = 0; i < this->model->get_road_lengths()[road_index]; i++)
+        for(unsigned int i = this->model->get_road_lengths()[road_index]; i-->0;)
         {
             switch(direction)
             {
@@ -156,10 +159,20 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
 
     for(unsigned int i = 0; i < this->model->get_road_link_count(); i++)
     {
-        if(process_forward && (this->model->get_road_links()[i].origin_road == road_index) && (this->rendered_road_generations[this->model->get_road_links()[i].destination_road] <= this->model->get_generation()))
-            this->draw_road(this->model->get_road_links()[i].destination_road, true, x, y);
-        else if(!process_forward && (this->model->get_road_links()[i].destination_road == road_index) && (this->rendered_road_generations[this->model->get_road_links()[i].origin_road] <= this->model->get_generation()))
-            this->draw_road(this->model->get_road_links()[i].origin_road, false, x, y);
+        if((this->model->get_road_links()[i].origin_road == road_index) && (this->rendered_road_generations[this->model->get_road_links()[i].destination_road] <= this->model->get_generation()))
+        {
+            if(process_forward)
+                this->draw_road(this->model->get_road_links()[i].destination_road, true, x, y);
+            else
+                this->draw_road(this->model->get_road_links()[i].destination_road, true, start_x, start_y);
+        }
+        else if((this->model->get_road_links()[i].destination_road == road_index) && (this->rendered_road_generations[this->model->get_road_links()[i].origin_road] <= this->model->get_generation()))
+        {
+            if(!process_forward)
+                this->draw_road(this->model->get_road_links()[i].origin_road, false, x, y);
+            else
+                this->draw_road(this->model->get_road_links()[i].origin_road, false, start_x, start_y);
+        }
     }
 }
 
