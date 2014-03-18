@@ -10,6 +10,7 @@
 using namespace std;
 
 road_link *road_links_d;
+signed int *cells_d;
 
 extern "C"
 void cuda_init(road_link *road_links, unsigned int road_link_count);

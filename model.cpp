@@ -23,15 +23,14 @@ unsigned int* Model::get_road_lengths()
 
 void Model::init()
 {
+    this->generation = 0;
     this->road_count = DEFAULT_ROAD_COUNT;
+    this->road_directions = new Direction[this->road_count];
     this->road_lengths = new unsigned int[this->road_count];
     this->vehicle_speed_limit = DEFAULT_VEHICLE_SPEED_LIMIT;
     this->desired_density = DEFAULT_DESIRED_DENSITY;
 
-    for(unsigned int i = 0; i < this->road_count; i++)
-        this->road_lengths[i] = DEFAULT_ROAD_LENGTH;
-
-    this->cells = this->init_empty_cells();
+    this->init_roads();
     this->init_vehicles();
 
     this->max_road_length = 0;
@@ -42,6 +41,22 @@ void Model::init()
 
     this->init_road_links();
     cuda_init(this->road_links, this->road_link_count);
+}
+
+void Model::init_roads()
+{
+//    for(unsigned int i = 0; i < this->road_count; i++)
+//        this->road_lengths[i] = DEFAULT_ROAD_LENGTH;
+
+    this->road_lengths[0] = 50;
+    this->road_lengths[1] = 10;
+    this->road_lengths[2] = 30;
+
+    this->road_directions[0] = this->Right;
+    this->road_directions[1] = this->Down;
+    this->road_directions[2] = this->Right;
+
+    this->cells = this->init_empty_cells();
 }
 
 void Model::init_road_links()
@@ -91,6 +106,7 @@ void Model::init_vehicles()
 void Model::update()
 {
     this->vehicle_rules();
+    this->generation++;
 //    this->accelerate_rule();
 //    this->decelerate_rule();
 //    this->random_rule();
@@ -291,4 +307,29 @@ void Model::toggle_road_links()
             links.clear();
         }
     }
+}
+
+unsigned long Model::get_generation()
+{
+    return this->generation;
+}
+
+road_link *Model::get_road_links()
+{
+    return this->road_links;
+}
+
+unsigned int Model::get_road_link_count()
+{
+    return this->road_link_count;
+}
+
+Model::Direction *Model::get_road_directions()
+{
+    return this->road_directions;
+}
+
+void Model::set_desired_density(float desired_density)
+{
+    this->desired_density = desired_density;
 }

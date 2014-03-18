@@ -14,11 +14,13 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    model.cpp
+    model.cpp \
+    modelupdater.cpp
 
 HEADERS  += mainwindow.h \
     model.h \
-    roadlink.h
+    roadlink.h \
+    modelupdater.h
 
 FORMS    += mainwindow.ui
 
