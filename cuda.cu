@@ -21,7 +21,7 @@ void cuda_init(road_link *road_links, unsigned int road_link_count)
     cudaMemcpy(road_links_d, road_links, (sizeof(road_link) * road_link_count), cudaMemcpyHostToDevice);
 }
 
-__device__ void cuda_toggle_road_links_by_origin(road_link *road_links, unsigned int road_link_count)
+__device__ void cuda_toggle_road_links_by_origin(unsigned int road, road_link *road_links, unsigned int road_link_count)
 {
     bool toggled = false;
 
@@ -29,12 +29,12 @@ __device__ void cuda_toggle_road_links_by_origin(road_link *road_links, unsigned
     {
         for(unsigned int i = 0; i < road_link_count; i++)
         {
-            if(!toggled && road_links[i].origin_road == blockIdx.x && road_links[i].active)
+            if(!toggled && road_links[i].origin_road == road && road_links[i].active)
             {
                 road_links[i].active = false;
                 toggled = true;
             }
-            else if(toggled && road_links[i].origin_road == blockIdx.x)
+            else if(toggled && road_links[i].origin_road == road)
             {
                 road_links[i].active = true;
                 return;
@@ -43,7 +43,7 @@ __device__ void cuda_toggle_road_links_by_origin(road_link *road_links, unsigned
     }
 }
 
-__device__ void cuda_toggle_road_links_by_destination(road_link *road_links, unsigned int road_link_count)
+__device__ void cuda_toggle_road_links_by_destination(unsigned int road, road_link *road_links, unsigned int road_link_count)
 {
     bool toggled = false;
 
@@ -51,12 +51,12 @@ __device__ void cuda_toggle_road_links_by_destination(road_link *road_links, uns
     {
         for(unsigned int i = 0; i < road_link_count; i++)
         {
-            if(!toggled && road_links[i].destination_road == blockIdx.x && road_links[i].active)
+            if(!toggled && road_links[i].destination_road == road && road_links[i].active)
             {
                 road_links[i].active = false;
                 toggled = true;
             }
-            else if(toggled && road_links[i].destination_road == blockIdx.x)
+            else if(toggled && road_links[i].destination_road == road)
             {
                 road_links[i].active = true;
                 return;
@@ -65,10 +65,10 @@ __device__ void cuda_toggle_road_links_by_destination(road_link *road_links, uns
     }
 }
 
-__global__ void cuda_toggle_road_links(road_link *road_links, unsigned int road_link_count)
+__global__ void cuda_toggle_road_links(road_link *road_links, unsigned int road_link_count, unsigned int road_count)
 {
-    cuda_toggle_road_links_by_origin(road_links, road_link_count);
-    cuda_toggle_road_links_by_destination(road_links, road_link_count);
+//    cuda_toggle_road_links_by_destination(blockIdx.x, road_links, road_link_count);
+    cuda_toggle_road_links_by_origin(blockIdx.x, road_links, road_link_count);
 }
 
 __device__ unsigned int cuda_hash(unsigned int a)
@@ -295,7 +295,7 @@ float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigne
     cudaFree(vehicle_counts_d);
     delete[] vehicle_counts;
 
-    cuda_toggle_road_links<<<road_count,1>>>(road_links_d, road_link_count);
+    cuda_toggle_road_links<<<road_count,1>>>(road_links_d, road_link_count, road_count);
 
 //    cout << cudaGetErrorString(cudaGetLastError()) << endl;
     return((float)vehicle_count / (float)cell_count);

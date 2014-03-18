@@ -86,7 +86,7 @@ void Model::init_road_links()
     road_link r1;
     r1.origin_road = 1;
     r1.destination_road = 2;
-    r1.active = false;
+    r1.active = true;
 
     road_link r2;
     r2.origin_road = 2;
@@ -96,12 +96,12 @@ void Model::init_road_links()
     road_link r3;
     r3.origin_road = 2;
     r3.destination_road = 4;
-    r3.active = false;
+    r3.active = true;
 
     road_link r4;
     r4.origin_road = 2;
     r4.destination_road = 5;
-    r4.active = false;
+    r4.active = true;
 
     road_link r5;
     r5.origin_road = 4;
@@ -111,7 +111,7 @@ void Model::init_road_links()
     road_link r6;
     r6.origin_road = 6;
     r6.destination_road = 7;
-    r6.active = false;
+    r6.active = true;
 
     road_link r7;
     r7.origin_road = 5;
@@ -126,12 +126,12 @@ void Model::init_road_links()
     road_link r9;
     r9.origin_road = 5;
     r9.destination_road = 9;
-    r9.active = false;
+    r9.active = true;
 
     road_link r10;
     r10.origin_road = 7;
     r10.destination_road = 9;
-    r10.active = false;
+    r10.active = true;
 
     road_link r11;
     r11.origin_road = 9;
@@ -146,7 +146,7 @@ void Model::init_road_links()
     road_link r13;
     r13.origin_road = 3;
     r13.destination_road = 11;
-    r13.active = false;
+    r13.active = true;
 
     this->road_link_count = 14;
     this->road_links = new road_link[this->road_link_count];
