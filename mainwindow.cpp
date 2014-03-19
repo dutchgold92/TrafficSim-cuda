@@ -155,6 +155,43 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
         }
     }
 
+    if(process_forward)
+    {
+        switch(direction)
+        {
+            case Model::Up:
+                y -= this->cell_size;
+                break;
+            case Model::Down:
+                y += this->cell_size;
+                break;
+            case Model::Left:
+                x -= this->cell_size;
+                break;
+            case Model::Right:
+                x += this->cell_size;
+                break;
+        }
+    }
+    else
+    {
+        switch(direction)
+        {
+            case Model::Up:
+                y += this->cell_size;
+                break;
+            case Model::Down:
+                y -= this->cell_size;
+                break;
+            case Model::Left:
+                x += this->cell_size;
+                break;
+            case Model::Right:
+                x -= this->cell_size;
+                break;
+        }
+    }
+
     this->rendered_road_generations[road_index]++;
 
     for(unsigned int i = 0; i < this->model->get_road_link_count(); i++)

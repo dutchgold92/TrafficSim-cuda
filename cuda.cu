@@ -131,13 +131,11 @@ __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index
     unsigned int clearance = 0;
     signed int next_road;
 
-    for(unsigned int i = (index + 1), r_i = (road_index + 1); r_i < road_length && clearance <= max_speed; i++ && r_i++)
+    for(unsigned int i = (index + 1), r_i = (road_index + 1); clearance <= max_speed; i++ && r_i++)
     {
         clearance++;
 
-        if(cells[i] >= 0)
-            return(clearance);
-        else if(r_i == (road_length - 1))
+        if(r_i == road_length)
         {
             next_road = cuda_get_next_road(road, road_links, road_link_count);
 
@@ -152,6 +150,8 @@ __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index
             else if(next_road == -2)
                 return UINT_MAX;
         }
+        else if(cells[i] >= 0)
+            return(clearance);
     }
 
     return UINT_MAX;
