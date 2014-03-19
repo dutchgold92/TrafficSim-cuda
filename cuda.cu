@@ -11,14 +11,62 @@ using namespace std;
 
 road_link *road_links_d;
 signed int *cells_d;
+signed int *temp_cells_d;
+unsigned int *road_lengths_d;
+unsigned int max_road_length;
+unsigned int road_count;
+unsigned int max_speed;
+unsigned int road_link_count;
+unsigned int blocks_per_road;
+unsigned int cell_count;
+unsigned int size;
 
 extern "C"
-void cuda_init(road_link *road_links, unsigned int road_link_count);
+void cuda_init(signed int **_cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count);
 
-void cuda_init(road_link *road_links, unsigned int road_link_count)
+void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count)
 {
+    max_road_length = _max_road_length;
+    road_count = _road_count;
+    max_speed = _max_speed;
+    road_link_count = _road_link_count;
+    blocks_per_road = ceil((float)max_road_length / (float)THREADS_PER_BLOCK);
+
+    cell_count = 0;
+    size = 0;
+
+    for(unsigned int i = 0; i < road_count; i++)
+        cell_count += road_lengths[i];
+    size = cell_count * sizeof(int);
+
+    cudaMalloc((void**)&cells_d, size);
+    cudaMalloc((void**)&temp_cells_d, size);
+    cudaMalloc((void**)&road_lengths_d, (sizeof(int) * road_count));
     cudaMalloc((void**)&road_links_d, (sizeof(road_link) * road_link_count));
+
+    int *cells_d_ptr = &cells_d[0];
+    int *temp_cells_d_ptr = &temp_cells_d[0];
+
+    for(int i = 0; i < road_count; i++)
+    {
+        cudaMemcpy(cells_d_ptr, cells[i], (sizeof(int) * road_lengths[i]), cudaMemcpyHostToDevice);
+        cudaMemcpy(temp_cells_d_ptr, cells[i], (sizeof(int) * road_lengths[i]), cudaMemcpyHostToDevice);
+        cells_d_ptr += road_lengths[i];
+        temp_cells_d_ptr += road_lengths[i];
+    }
+
+    cudaMemcpy(road_lengths_d, road_lengths, (sizeof(int) * road_count), cudaMemcpyHostToDevice);
     cudaMemcpy(road_links_d, road_links, (sizeof(road_link) * road_link_count), cudaMemcpyHostToDevice);
+}
+
+extern "C"
+void cuda_deinit();
+
+void cuda_deinit()
+{
+    cudaFree(cells_d);
+    cudaFree(temp_cells_d);
+    cudaFree(road_lengths_d);
 }
 
 __device__ void cuda_toggle_road_links_by_origin(unsigned int road, road_link *road_links, unsigned int road_link_count)
@@ -231,53 +279,26 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
 }
 
 extern "C"
-float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed, unsigned int road_link_count);
+float cuda_process_model(signed int **cells, unsigned int *road_lengths);
 
 extern "C"
-float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed, unsigned int road_link_count)
+float cuda_process_model(signed int **cells, unsigned int *road_lengths)
 {
-    signed int *cells_d;
-    signed int *temp_cells_d;
-    unsigned int *road_lengths_d;
-    unsigned int blocks_per_road = ceil((float)max_road_length / (float)THREADS_PER_BLOCK);
-    unsigned int size = 0;
-    unsigned int cell_count = 0;
     unsigned int vehicle_count = 0;
     unsigned int *vehicle_counts = new unsigned int[road_count];
     unsigned int *vehicle_counts_d;
     unsigned int random_seed;
 
     for(unsigned int i = 0; i < road_count; i++)
-    {
-        cell_count += road_lengths[i];
         vehicle_counts[i] = 0;
-    }
-    size = cell_count * sizeof(int);
 
     random_seed = rand() % UINT_MAX;
-
-    cudaMalloc((void**)&cells_d, size);
-    cudaMalloc((void**)&temp_cells_d, size);
-    cudaMalloc((void**)&road_lengths_d, (sizeof(int) * road_count));
     cudaMalloc((void**)&vehicle_counts_d, (sizeof(int) * road_count));
-
-    int *cells_d_ptr = &cells_d[0];
-    int *temp_cells_d_ptr = &temp_cells_d[0];
-
-    for(int i = 0; i < road_count; i++)
-    {
-        cudaMemcpy(cells_d_ptr, cells[i], (sizeof(int) * road_lengths[i]), cudaMemcpyHostToDevice);
-        cudaMemcpy(temp_cells_d_ptr, cells[i], (sizeof(int) * road_lengths[i]), cudaMemcpyHostToDevice);
-        cells_d_ptr += road_lengths[i];
-        temp_cells_d_ptr += road_lengths[i];
-    }
-
-    cudaMemcpy(road_lengths_d, road_lengths, (sizeof(int) * road_count), cudaMemcpyHostToDevice);
     cudaMemcpy(vehicle_counts_d, vehicle_counts, (sizeof(int) * road_count), cudaMemcpyHostToDevice);
 
     cuda_apply_rules<<<(blocks_per_road * road_count), THREADS_PER_BLOCK>>>(cells_d, temp_cells_d, road_lengths_d, road_count, max_speed, vehicle_counts_d, random_seed, road_links_d, road_link_count);
 
-    temp_cells_d_ptr = &temp_cells_d[0];
+    int *temp_cells_d_ptr = &temp_cells_d[0];
 
     for(int i = 0; i < road_count; i++)
     {
@@ -285,13 +306,11 @@ float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigne
         temp_cells_d_ptr += road_lengths[i];
     }
 
+    cudaMemcpy(cells_d, temp_cells_d, size, cudaMemcpyDeviceToDevice);
     cudaMemcpy(vehicle_counts, vehicle_counts_d, (sizeof(int) * road_count), cudaMemcpyDeviceToHost);
     for(unsigned int i = 0; i < road_count; i++)
         vehicle_count += vehicle_counts[i];
 
-    cudaFree(cells_d);
-    cudaFree(temp_cells_d);
-    cudaFree(road_lengths_d);
     cudaFree(vehicle_counts_d);
     delete[] vehicle_counts;
 

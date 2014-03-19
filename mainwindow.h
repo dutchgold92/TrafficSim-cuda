@@ -7,7 +7,6 @@
 #include <QMainWindow>
 #include <model.h>
 #include <modelupdater.h>
-#include <QElapsedTimer>
 #include <QGraphicsScene>
 #include <QGraphicsRectItem>
 

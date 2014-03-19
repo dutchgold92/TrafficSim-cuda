@@ -1,9 +1,9 @@
 #ifndef MODEL_H
 #define MODEL_H
-//#define DEFAULT_ROAD_COUNT 100
-//#define DEFAULT_ROAD_LENGTH 50000
-#define DEFAULT_ROAD_COUNT 3
-#define DEFAULT_ROAD_LENGTH 30
+#define DEFAULT_ROAD_COUNT 100
+#define DEFAULT_ROAD_LENGTH 50000
+//#define DEFAULT_ROAD_COUNT 3
+//#define DEFAULT_ROAD_LENGTH 30
 #define DEFAULT_VEHICLE_SPEED_LIMIT 5
 #define DEFAULT_DESIRED_DENSITY 0.2
 
@@ -15,10 +15,13 @@
 #include <vector>
 
 extern "C"
-void cuda_init(road_link *road_links, unsigned int road_link_count);
+void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count);
 
 extern "C"
-float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int max_road_length, unsigned int road_count, unsigned int max_speed, unsigned int road_link_count);
+void cuda_deinit();
+
+extern "C"
+float cuda_process_model(signed int** cells, unsigned int* road_lengths);
 
 using namespace std;
 
@@ -26,6 +29,7 @@ class Model
 {
 public:
     Model();
+    ~Model();
     enum Direction {Up, Down, Left, Right};
     signed int** get_cells();
     road_link *get_road_links();

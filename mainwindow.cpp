@@ -50,24 +50,11 @@ MainWindow::MainWindow(QWidget *parent) :
     this->draw_model();
     this->model_updater = new ModelUpdater(this, this->model);
     this->model_updater->start();
-
-//    QElapsedTimer timer;
-//    qint64 m_seconds;
-//    timer.start();
-
-//    for(int i = 0; i < 15; i++)
-//    {
-//        this->model->display();
-//        this->model->update();
-//    }
-
-//    m_seconds = timer.elapsed();
-
-//    cout << "finished after: " << m_seconds << "ms" << endl;
 }
 
 MainWindow::~MainWindow()
 {
+    delete this->model;
     delete ui;
 }
 
