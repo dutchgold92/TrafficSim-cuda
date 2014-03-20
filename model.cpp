@@ -6,6 +6,15 @@ Model::Model()
     this->init();
 }
 
+Model::~Model()
+{
+    cuda_deinit();
+    delete[] this->cells;
+    delete[] this->road_directions;
+    delete[] this->road_lengths;
+    delete[] this->road_links;
+}
+
 signed int** Model::get_cells()
 {
     return this->cells;
@@ -23,15 +32,15 @@ unsigned int* Model::get_road_lengths()
 
 void Model::init()
 {
-    this->road_count = DEFAULT_ROAD_COUNT;
+    this->generation = 0;
+    this->road_count = 12;
+//    this->road_count = DEFAULT_ROAD_COUNT;
+    this->road_directions = new Direction[this->road_count];
     this->road_lengths = new unsigned int[this->road_count];
     this->vehicle_speed_limit = DEFAULT_VEHICLE_SPEED_LIMIT;
     this->desired_density = DEFAULT_DESIRED_DENSITY;
 
-    for(unsigned int i = 0; i < this->road_count; i++)
-        this->road_lengths[i] = DEFAULT_ROAD_LENGTH;
-
-    this->cells = this->init_empty_cells();
+    this->init_roads();
     this->init_vehicles();
 
     this->max_road_length = 0;
@@ -39,6 +48,132 @@ void Model::init()
     for(unsigned int i = 0; i < this->road_count; i++)
         if(this->road_lengths[i] > this->max_road_length)
             this->max_road_length = this->road_lengths[i];
+
+    this->init_road_links();
+    cuda_init(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_links, this->road_link_count);
+}
+
+void Model::init_roads()
+{
+//    for(unsigned int i = 0; i < this->road_count; i++)
+//        this->road_lengths[i] = DEFAULT_ROAD_LENGTH;
+
+    this->road_lengths[0] = 25;
+    this->road_directions[0] = this->Right;
+    this->road_lengths[1] = 25;
+    this->road_directions[1] = this->Up;
+    this->road_lengths[2] = 25;
+    this->road_directions[2] = this->Right;
+    this->road_lengths[3] = 25;
+    this->road_directions[3] = this->Down;
+    this->road_lengths[4] = 5;
+    this->road_directions[4] = this->Up;
+    this->road_lengths[5] = 25;
+    this->road_directions[5] = this->Right;
+    this->road_lengths[6] = 25;
+    this->road_directions[6] = this->Right;
+    this->road_lengths[7] = 5;
+    this->road_directions[7] = this->Down;
+    this->road_lengths[8] = 25;
+    this->road_directions[8] = this->Right;
+    this->road_lengths[9] = 25;
+    this->road_directions[9] = this->Down;
+    this->road_lengths[10] = 25;
+    this->road_directions[10] = this->Left;
+    this->road_lengths[11] = 10;
+    this->road_directions[11] = this->Down;
+
+    this->cells = this->init_empty_cells();
+}
+
+void Model::init_road_links()
+{
+    road_link r0;
+    r0.origin_road = 0;
+    r0.destination_road = 2;
+    r0.active = true;
+
+    road_link r1;
+    r1.origin_road = 1;
+    r1.destination_road = 2;
+    r1.active = true;
+
+    road_link r2;
+    r2.origin_road = 2;
+    r2.destination_road = 3;
+    r2.active = true;
+
+    road_link r3;
+    r3.origin_road = 2;
+    r3.destination_road = 4;
+    r3.active = true;
+
+    road_link r4;
+    r4.origin_road = 2;
+    r4.destination_road = 5;
+    r4.active = true;
+
+    road_link r5;
+    r5.origin_road = 4;
+    r5.destination_road = 6;
+    r5.active = true;
+
+    road_link r6;
+    r6.origin_road = 6;
+    r6.destination_road = 7;
+    r6.active = true;
+
+    road_link r7;
+    r7.origin_road = 5;
+    r7.destination_road = 8;
+    r7.active = true;
+
+    road_link r8;
+    r8.origin_road = 7;
+    r8.destination_road = 8;
+    r8.active = true;
+
+    road_link r9;
+    r9.origin_road = 5;
+    r9.destination_road = 9;
+    r9.active = true;
+
+    road_link r10;
+    r10.origin_road = 7;
+    r10.destination_road = 9;
+    r10.active = true;
+
+    road_link r11;
+    r11.origin_road = 9;
+    r11.destination_road = 10;
+    r11.active = true;
+
+    road_link r12;
+    r12.origin_road = 10;
+    r12.destination_road = 11;
+    r12.active = true;
+
+    road_link r13;
+    r13.origin_road = 3;
+    r13.destination_road = 11;
+    r13.active = true;
+
+    this->road_link_count = 14;
+    this->road_links = new road_link[this->road_link_count];
+    this->road_links[0] = r0;
+    this->road_links[1] = r1;
+    this->road_links[2] = r2;
+    this->road_links[3] = r3;
+    this->road_links[4] = r4;
+    this->road_links[5] = r5;
+    this->road_links[6] = r6;
+    this->road_links[7] = r7;
+    this->road_links[8] = r8;
+    this->road_links[9] = r9;
+    this->road_links[10] = r10;
+    this->road_links[11] = r11;
+    this->road_links[12] = r12;
+    this->road_links[13] = r13;
 }
 
 signed int** Model::init_empty_cells()
@@ -62,7 +197,7 @@ void Model::init_vehicles()
     {
         for(unsigned int y = 0; y < this->road_lengths[x]; y++)
         {
-            if(y < 5)    // FIXME: shoddy workmanship! COWBOYS!
+            if(x == 0 && y < 5)    // FIXME: shoddy workmanship! COWBOYS!
                 this->cells[x][y] = 0;
         }
     }
@@ -71,6 +206,7 @@ void Model::init_vehicles()
 void Model::update()
 {
     this->vehicle_rules();
+    this->generation++;
 //    this->accelerate_rule();
 //    this->decelerate_rule();
 //    this->random_rule();
@@ -101,7 +237,7 @@ void Model::display()
 
 void Model::vehicle_rules()
 {
-    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit);
+    this->model_density = cuda_process_model(this->cells, this->road_lengths);
 }
 
 void Model::synthesize_traffic()
@@ -241,4 +377,59 @@ unsigned int Model::get_clearance_ahead(unsigned int road, unsigned int cell)
     }
 
     return numeric_limits<unsigned int>::max();
+}
+
+void Model::toggle_road_links()
+{
+    vector<road_link*> links;
+
+    for(unsigned int x = 0; x < this->road_count; x++)
+    {
+        for(unsigned int y = 0; y < this->road_link_count; y++)
+        {
+            if(this->road_links[y].origin_road == x)
+                links.push_back(&this->road_links[y]);
+        }
+
+        if(!links.empty())
+        {
+            unsigned int new_active_index = (rand() % links.size());
+            links.at(new_active_index)->active = true;
+
+            for(unsigned int i = 0; i < links.size(); i++)
+            {
+                if(i == new_active_index)
+                    continue;
+                else
+                    links.at(i)->active = false;
+            }
+
+            links.clear();
+        }
+    }
+}
+
+unsigned long Model::get_generation()
+{
+    return this->generation;
+}
+
+road_link *Model::get_road_links()
+{
+    return this->road_links;
+}
+
+unsigned int Model::get_road_link_count()
+{
+    return this->road_link_count;
+}
+
+Model::Direction *Model::get_road_directions()
+{
+    return this->road_directions;
+}
+
+void Model::set_desired_density(float desired_density)
+{
+    this->desired_density = desired_density;
 }
