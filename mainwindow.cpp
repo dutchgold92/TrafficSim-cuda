@@ -183,19 +183,38 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
 
     for(unsigned int i = 0; i < this->model->get_road_link_count(); i++)
     {
-        if((this->model->get_road_links()[i].origin_road == road_index) && (this->rendered_road_generations[this->model->get_road_links()[i].destination_road] <= this->model->get_generation()))
+        for(unsigned int j = 0; j < this->model->get_road_links()[i].origin_road_count; j++)
         {
-            if(process_forward)
-                this->draw_road(this->model->get_road_links()[i].destination_road, true, x, y);
-            else
-                this->draw_road(this->model->get_road_links()[i].destination_road, true, start_x, start_y);
+            if(this->model->get_road_links()[i].origin_roads[j] == road_index)
+            {
+                for(unsigned int k = 0; k < this->model->get_road_links()[i].destination_road_count; k++)
+                {
+                    if(this->rendered_road_generations[this->model->get_road_links()[i].destination_roads[k]] <= this->model->get_generation())
+                    {
+                        if(process_forward)
+                            this->draw_road(this->model->get_road_links()[i].destination_roads[k], true, x, y);
+                        else
+                            this->draw_road(this->model->get_road_links()[i].destination_roads[k], true, start_x, start_y);
+                    }
+                }
+            }
         }
-        else if((this->model->get_road_links()[i].destination_road == road_index) && (this->rendered_road_generations[this->model->get_road_links()[i].origin_road] <= this->model->get_generation()))
+
+        for(unsigned int j = 0; j < this->model->get_road_links()[i].destination_road_count; j++)
         {
-            if(!process_forward)
-                this->draw_road(this->model->get_road_links()[i].origin_road, false, x, y);
-            else
-                this->draw_road(this->model->get_road_links()[i].origin_road, false, start_x, start_y);
+            if(this->model->get_road_links()[i].destination_roads[j] == road_index)
+            {
+                for(unsigned int k = 0; k < this->model->get_road_links()[i].origin_road_count; k++)
+                {
+                    if(this->rendered_road_generations[this->model->get_road_links()[i].origin_roads[k]] <= this->model->get_generation())
+                    {
+                        if(!process_forward)
+                            this->draw_road(this->model->get_road_links()[i].origin_roads[k], false, x, y);
+                        else
+                            this->draw_road(this->model->get_road_links()[i].origin_roads[k], false, start_x, start_y);
+                    }
+                }
+            }
         }
     }
 }

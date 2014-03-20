@@ -71,46 +71,46 @@ void cuda_deinit()
 
 __device__ void cuda_toggle_road_links_by_origin(unsigned int road, road_link *road_links, unsigned int road_link_count)
 {
-    bool toggled = false;
+//    bool toggled = false;
 
-    for(unsigned int loops = 0; loops < 2; loops++)
-    {
-        for(unsigned int i = 0; i < road_link_count; i++)
-        {
-            if(!toggled && road_links[i].origin_road == road && road_links[i].active)
-            {
-                road_links[i].active = false;
-                toggled = true;
-            }
-            else if(toggled && road_links[i].origin_road == road)
-            {
-                road_links[i].active = true;
-                return;
-            }
-        }
-    }
+//    for(unsigned int loops = 0; loops < 2; loops++)
+//    {
+//        for(unsigned int i = 0; i < road_link_count; i++)
+//        {
+//            if(!toggled && road_links[i].origin_road == road && road_links[i].active)
+//            {
+//                road_links[i].active = false;
+//                toggled = true;
+//            }
+//            else if(toggled && road_links[i].origin_road == road)
+//            {
+//                road_links[i].active = true;
+//                return;
+//            }
+//        }
+//    }
 }
 
 __device__ void cuda_toggle_road_links_by_destination(unsigned int road, road_link *road_links, unsigned int road_link_count)
 {
-    bool toggled = false;
+//    bool toggled = false;
 
-    for(unsigned int loops = 0; loops < 2; loops++)
-    {
-        for(unsigned int i = 0; i < road_link_count; i++)
-        {
-            if(!toggled && road_links[i].destination_road == road && road_links[i].active)
-            {
-                road_links[i].active = false;
-                toggled = true;
-            }
-            else if(toggled && road_links[i].destination_road == road)
-            {
-                road_links[i].active = true;
-                return;
-            }
-        }
-    }
+//    for(unsigned int loops = 0; loops < 2; loops++)
+//    {
+//        for(unsigned int i = 0; i < road_link_count; i++)
+//        {
+//            if(!toggled && road_links[i].destination_road == road && road_links[i].active)
+//            {
+//                road_links[i].active = false;
+//                toggled = true;
+//            }
+//            else if(toggled && road_links[i].destination_road == road)
+//            {
+//                road_links[i].active = true;
+//                return;
+//            }
+//        }
+//    }
 }
 
 __global__ void cuda_toggle_road_links(road_link *road_links, unsigned int road_link_count, unsigned int road_count)
@@ -142,15 +142,24 @@ __device__ float cuda_get_random(unsigned int seed_input)
  * Returns index of next open road.
  * Returns -1 if no next road is open, or -2 if there is no next road.
  */
-__device__ signed int cuda_get_next_road(unsigned int road, road_link *road_links, unsigned int road_link_count)
+__device__ signed int cuda_get_next_road(unsigned int origin_road, road_link *road_links, unsigned int road_link_count)
 {
     for(unsigned int i = 0; i < road_link_count; i++)
-        if(road_links[i].active && road_links[i].origin_road == road)
-            return road_links[i].destination_road;
+    {
+        for(unsigned int x = 0; x < road_links[i].origin_road_count; x++)
+        {
+            if(road_links[i].origin_roads[x] == origin_road)
+            {
+                for(unsigned int y = 0; y < road_links[i].destination_road_count; y++)
+                {
+                    if(road_links[i].destination_roads_active[y])
+                        return road_links[i].destination_roads[y];
+                }
 
-    for(unsigned int i = 0; i < road_link_count; i++)
-        if(road_links[i].origin_road == road)
-            return -1;
+                return -1;
+            }
+        }
+    }
 
     return -2;
 }
@@ -158,8 +167,36 @@ __device__ signed int cuda_get_next_road(unsigned int road, road_link *road_link
 __device__ signed int cuda_get_road_link(unsigned int origin_road, unsigned int destination_road, road_link *road_links, unsigned int road_link_count)
 {
     for(unsigned int i = 0; i < road_link_count; i++)
-        if(road_links[i].origin_road == origin_road && road_links[i].destination_road == destination_road)
+    {
+        bool origin_found = false;
+        bool destination_found = false;
+
+        for(unsigned int x = 0; x < road_links[i].origin_road_count; x++)
+        {
+            if(road_links[i].origin_roads[x] == origin_road)
+            {
+                origin_found = true;
+                break;
+            }
+        }
+
+        for(unsigned int x = 0; x < road_links[i].destination_road_count; x++)
+        {
+            if(road_links[i].destination_roads[x] == destination_road)
+            {
+                destination_found = true;
+                break;
+            }
+        }
+
+        if(origin_found && destination_found)
             return i;
+        else
+        {
+            origin_found = false;
+            destination_found = false;
+        }
+    }
 
     return -1;
 }

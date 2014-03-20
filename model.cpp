@@ -89,76 +89,55 @@ void Model::init_roads()
 void Model::init_road_links()
 {
     road_link r0;
-    r0.origin_road = 0;
-    r0.destination_road = 2;
-    r0.active = true;
+    r0.origin_road_count = 2;
+    r0.destination_road_count = 1;
+    r0.origin_roads[0] = 0;
+    r0.origin_roads[1] = 1;
+    r0.destination_roads[0] = 2;
 
     road_link r1;
-    r1.origin_road = 1;
-    r1.destination_road = 2;
-    r1.active = true;
+    r1.origin_road_count = 1;
+    r1.destination_road_count = 3;
+    r1.origin_roads[0] = 2;
+    r1.destination_roads[0] = 3;
+    r1.destination_roads[1] = 4;
+    r1.destination_roads[2] = 5;
+
 
     road_link r2;
-    r2.origin_road = 2;
-    r2.destination_road = 3;
-    r2.active = true;
+    r2.origin_road_count = 1;
+    r2.destination_road_count = 1;
+    r2.origin_roads[0] = 4;
+    r2.destination_roads[0] = 6;
 
     road_link r3;
-    r3.origin_road = 2;
-    r3.destination_road = 4;
-    r3.active = true;
+    r3.origin_road_count = 1;
+    r3.destination_road_count = 1;
+    r3.origin_roads[0] = 6;
+    r3.destination_roads[0] = 7;
 
     road_link r4;
-    r4.origin_road = 2;
-    r4.destination_road = 5;
-    r4.active = true;
+    r4.origin_road_count = 2;
+    r4.destination_road_count = 2;
+    r4.origin_roads[0] = 5;
+    r4.origin_roads[1] = 7;
+    r4.destination_roads[0] = 8;
+    r4.destination_roads[1] = 9;
 
     road_link r5;
-    r5.origin_road = 4;
-    r5.destination_road = 6;
-    r5.active = true;
+    r5.origin_road_count = 1;
+    r5.destination_road_count = 1;
+    r5.origin_roads[0] = 9;
+    r5.destination_roads[0] = 10;
 
     road_link r6;
-    r6.origin_road = 6;
-    r6.destination_road = 7;
-    r6.active = true;
+    r6.origin_road_count = 2;
+    r6.destination_road_count = 1;
+    r6.origin_roads[0] = 3;
+    r6.origin_roads[1] = 10;
+    r6.destination_roads[0] = 11;
 
-    road_link r7;
-    r7.origin_road = 5;
-    r7.destination_road = 8;
-    r7.active = true;
-
-    road_link r8;
-    r8.origin_road = 7;
-    r8.destination_road = 8;
-    r8.active = true;
-
-    road_link r9;
-    r9.origin_road = 5;
-    r9.destination_road = 9;
-    r9.active = true;
-
-    road_link r10;
-    r10.origin_road = 7;
-    r10.destination_road = 9;
-    r10.active = true;
-
-    road_link r11;
-    r11.origin_road = 9;
-    r11.destination_road = 10;
-    r11.active = true;
-
-    road_link r12;
-    r12.origin_road = 10;
-    r12.destination_road = 11;
-    r12.active = true;
-
-    road_link r13;
-    r13.origin_road = 3;
-    r13.destination_road = 11;
-    r13.active = true;
-
-    this->road_link_count = 14;
+    this->road_link_count = 7;
     this->road_links = new road_link[this->road_link_count];
     this->road_links[0] = r0;
     this->road_links[1] = r1;
@@ -167,13 +146,25 @@ void Model::init_road_links()
     this->road_links[4] = r4;
     this->road_links[5] = r5;
     this->road_links[6] = r6;
-    this->road_links[7] = r7;
-    this->road_links[8] = r8;
-    this->road_links[9] = r9;
-    this->road_links[10] = r10;
-    this->road_links[11] = r11;
-    this->road_links[12] = r12;
-    this->road_links[13] = r13;
+
+    for(unsigned int x = 0; x < this->road_link_count; x++) // activate/deactivate road links
+    {
+        for(unsigned int y = 0; y < this->road_links[x].origin_road_count; y++) // origins
+        {
+            if(y == 0)
+                this->road_links[x].origin_roads_active[y] = true;
+            else
+                this->road_links[x].origin_roads_active[y] = false;
+        }
+
+        for(unsigned int y = 0; y < this->road_links[x].destination_road_count; y++)    // destinations
+        {
+            if(y == 0)
+                this->road_links[x].destination_roads_active[y] = true;
+            else
+                this->road_links[x].destination_roads_active[y] = false;
+        }
+    }
 }
 
 signed int** Model::init_empty_cells()
@@ -381,32 +372,32 @@ unsigned int Model::get_clearance_ahead(unsigned int road, unsigned int cell)
 
 void Model::toggle_road_links()
 {
-    vector<road_link*> links;
+//    vector<road_link*> links;
 
-    for(unsigned int x = 0; x < this->road_count; x++)
-    {
-        for(unsigned int y = 0; y < this->road_link_count; y++)
-        {
-            if(this->road_links[y].origin_road == x)
-                links.push_back(&this->road_links[y]);
-        }
+//    for(unsigned int x = 0; x < this->road_count; x++)
+//    {
+//        for(unsigned int y = 0; y < this->road_link_count; y++)
+//        {
+//            if(this->road_links[y].origin_road == x)
+//                links.push_back(&this->road_links[y]);
+//        }
 
-        if(!links.empty())
-        {
-            unsigned int new_active_index = (rand() % links.size());
-            links.at(new_active_index)->active = true;
+//        if(!links.empty())
+//        {
+//            unsigned int new_active_index = (rand() % links.size());
+//            links.at(new_active_index)->active = true;
 
-            for(unsigned int i = 0; i < links.size(); i++)
-            {
-                if(i == new_active_index)
-                    continue;
-                else
-                    links.at(i)->active = false;
-            }
+//            for(unsigned int i = 0; i < links.size(); i++)
+//            {
+//                if(i == new_active_index)
+//                    continue;
+//                else
+//                    links.at(i)->active = false;
+//            }
 
-            links.clear();
-        }
-    }
+//            links.clear();
+//        }
+//    }
 }
 
 unsigned long Model::get_generation()
