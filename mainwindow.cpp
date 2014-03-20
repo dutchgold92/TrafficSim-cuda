@@ -197,6 +197,8 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
                             this->draw_road(this->model->get_road_links()[i].destination_roads[k], true, start_x, start_y);
                     }
                 }
+
+                break;
             }
         }
 
@@ -214,6 +216,8 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
                             this->draw_road(this->model->get_road_links()[i].origin_roads[k], false, start_x, start_y);
                     }
                 }
+
+                break;
             }
         }
     }
