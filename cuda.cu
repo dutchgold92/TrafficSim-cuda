@@ -69,54 +69,60 @@ void cuda_deinit()
     cudaFree(road_lengths_d);
 }
 
-__device__ void cuda_toggle_road_links_by_origin(unsigned int road, road_link *road_links, unsigned int road_link_count)
+__device__ void cuda_toggle_road_link_origins(road_link *road_links, unsigned int road_link_index)
 {
-//    bool toggled = false;
+    bool toggled = false;
 
-//    for(unsigned int loops = 0; loops < 2; loops++)
-//    {
-//        for(unsigned int i = 0; i < road_link_count; i++)
-//        {
-//            if(!toggled && road_links[i].origin_road == road && road_links[i].active)
-//            {
-//                road_links[i].active = false;
-//                toggled = true;
-//            }
-//            else if(toggled && road_links[i].origin_road == road)
-//            {
-//                road_links[i].active = true;
-//                return;
-//            }
-//        }
-//    }
+    if(road_links[road_link_index].origin_road_count > 1)
+    {
+        for(unsigned int loop = 0; loop < 2; loop++)
+        {
+            for(unsigned int i = 0; i < road_links[road_link_index].origin_road_count; i++)
+            {
+                if(!toggled && road_links[road_link_index].origin_roads_active[i])
+                {
+                    road_links[road_link_index].origin_roads_active[i] = false;
+                    toggled = true;
+                }
+                else if(!toggled && !road_links[road_link_index].origin_roads_active[i])
+                {
+                    road_links[road_link_index].origin_roads_active[i] = true;
+                    return;
+                }
+            }
+        }
+    }
 }
 
-__device__ void cuda_toggle_road_links_by_destination(unsigned int road, road_link *road_links, unsigned int road_link_count)
+__device__ void cuda_toggle_road_link_destinations(road_link *road_links, unsigned int road_link_index)
 {
-//    bool toggled = false;
+    bool toggled = false;
 
-//    for(unsigned int loops = 0; loops < 2; loops++)
-//    {
-//        for(unsigned int i = 0; i < road_link_count; i++)
-//        {
-//            if(!toggled && road_links[i].destination_road == road && road_links[i].active)
-//            {
-//                road_links[i].active = false;
-//                toggled = true;
-//            }
-//            else if(toggled && road_links[i].destination_road == road)
-//            {
-//                road_links[i].active = true;
-//                return;
-//            }
-//        }
-//    }
+    if(road_links[blockIdx.x].destination_road_count > 1)
+    {
+        for(unsigned int loop = 0; loop < 2; loop++)
+        {
+            for(unsigned int i = 0; i < road_links[blockIdx.x].destination_road_count; i++)
+            {
+                if(!toggled && road_links[blockIdx.x].destination_roads_active[i])
+                {
+                    road_links[blockIdx.x].destination_roads_active[i] = false;
+                    toggled = true;
+                }
+                else if(!toggled && !road_links[blockIdx.x].destination_roads_active[i])
+                {
+                    road_links[blockIdx.x].destination_roads_active[i] = true;
+                    return;
+                }
+            }
+        }
+    }
 }
 
-__global__ void cuda_toggle_road_links(road_link *road_links, unsigned int road_link_count, unsigned int road_count)
+__global__ void cuda_toggle_road_links(road_link *road_links)
 {
-//    cuda_toggle_road_links_by_destination(blockIdx.x, road_links, road_link_count);
-    cuda_toggle_road_links_by_origin(blockIdx.x, road_links, road_link_count);
+    cuda_toggle_road_link_origins(road_links, blockIdx.x);
+    cuda_toggle_road_link_destinations(road_links, blockIdx.x);
 }
 
 __device__ unsigned int cuda_hash(unsigned int a)
@@ -351,7 +357,7 @@ float cuda_process_model(signed int **cells, unsigned int *road_lengths)
     cudaFree(vehicle_counts_d);
     delete[] vehicle_counts;
 
-    cuda_toggle_road_links<<<road_count,1>>>(road_links_d, road_link_count, road_count);
+    cuda_toggle_road_links<<<road_link_count,1>>>(road_links_d);
 
 //    cout << cudaGetErrorString(cudaGetLastError()) << endl;
     return((float)vehicle_count / (float)cell_count);
