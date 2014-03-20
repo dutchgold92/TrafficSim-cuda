@@ -21,7 +21,7 @@ extern "C"
 void cuda_deinit();
 
 extern "C"
-float cuda_process_model(signed int** cells, unsigned int* road_lengths);
+float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int generation);
 
 using namespace std;
 
@@ -46,6 +46,8 @@ public:
 private:
     signed int **cells;
     road_link *road_links;
+    unsigned int *input_roads;
+    unsigned int input_road_count;
     Direction *road_directions;
     unsigned int road_count;
     unsigned int road_link_count;
@@ -58,6 +60,7 @@ private:
     void init();
     void init_roads();
     void init_road_links();
+    void identify_input_roads();
     signed int** init_empty_cells();
     void init_vehicles();
     void synthesize_traffic();

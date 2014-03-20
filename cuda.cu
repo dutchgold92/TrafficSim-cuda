@@ -6,6 +6,7 @@
 #include <thrust/random.h>
 
 #define THREADS_PER_BLOCK 32
+#define TOGGLE_ROAD_LINKS_ON_GENERATION_MULTIPLE 4
 
 using namespace std;
 
@@ -84,7 +85,7 @@ __device__ void cuda_toggle_road_link_origins(road_link *road_links, unsigned in
                     road_links[road_link_index].origin_roads_active[i] = false;
                     toggled = true;
                 }
-                else if(!toggled && !road_links[road_link_index].origin_roads_active[i])
+                else if(toggled && !road_links[road_link_index].origin_roads_active[i])
                 {
                     road_links[road_link_index].origin_roads_active[i] = true;
                     return;
@@ -109,7 +110,7 @@ __device__ void cuda_toggle_road_link_destinations(road_link *road_links, unsign
                     road_links[blockIdx.x].destination_roads_active[i] = false;
                     toggled = true;
                 }
-                else if(!toggled && !road_links[blockIdx.x].destination_roads_active[i])
+                else if(toggled && !road_links[blockIdx.x].destination_roads_active[i])
                 {
                     road_links[blockIdx.x].destination_roads_active[i] = true;
                     return;
@@ -156,6 +157,9 @@ __device__ signed int cuda_get_next_road(unsigned int origin_road, road_link *ro
         {
             if(road_links[i].origin_roads[x] == origin_road)
             {
+                if(!road_links[i].origin_roads_active[x])
+                    return -1;
+
                 for(unsigned int y = 0; y < road_links[i].destination_road_count; y++)
                 {
                     if(road_links[i].destination_roads_active[y])
@@ -322,10 +326,10 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
 }
 
 extern "C"
-float cuda_process_model(signed int **cells, unsigned int *road_lengths);
+float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation);
 
 extern "C"
-float cuda_process_model(signed int **cells, unsigned int *road_lengths)
+float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation)
 {
     unsigned int vehicle_count = 0;
     unsigned int *vehicle_counts = new unsigned int[road_count];
@@ -357,7 +361,8 @@ float cuda_process_model(signed int **cells, unsigned int *road_lengths)
     cudaFree(vehicle_counts_d);
     delete[] vehicle_counts;
 
-    cuda_toggle_road_links<<<road_link_count,1>>>(road_links_d);
+    if(generation % TOGGLE_ROAD_LINKS_ON_GENERATION_MULTIPLE == 0)
+        cuda_toggle_road_links<<<road_link_count,1>>>(road_links_d);
 
 //    cout << cudaGetErrorString(cudaGetLastError()) << endl;
     return((float)vehicle_count / (float)cell_count);

@@ -39,10 +39,7 @@ void Model::init()
     this->road_lengths = new unsigned int[this->road_count];
     this->vehicle_speed_limit = DEFAULT_VEHICLE_SPEED_LIMIT;
     this->desired_density = DEFAULT_DESIRED_DENSITY;
-
     this->init_roads();
-    this->init_vehicles();
-
     this->max_road_length = 0;
 
     for(unsigned int i = 0; i < this->road_count; i++)
@@ -50,6 +47,8 @@ void Model::init()
             this->max_road_length = this->road_lengths[i];
 
     this->init_road_links();
+    this->identify_input_roads();
+    this->init_vehicles();
     cuda_init(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_links, this->road_link_count);
 }
 
@@ -167,6 +166,63 @@ void Model::init_road_links()
     }
 }
 
+void Model::identify_input_roads()
+{
+    this->input_road_count = 0;
+
+    for(unsigned int i = 0; i < this->road_count; i++)
+    {
+        bool found = false;
+
+        for(unsigned int x = 0; x < this->road_link_count; x++)
+        {
+            for(unsigned int y = 0; y < this->road_links[x].destination_road_count; y++)
+            {
+                if(this->road_links[x].destination_roads[y] == i)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if(found)
+               break;
+        }
+
+        if(!found)
+            this->input_road_count++;
+    }
+
+    this->input_roads = new unsigned int[this->input_road_count];
+    unsigned int found_count = 0;
+
+    for(unsigned int i = 0; i < this->road_count; i++)
+    {
+        bool found = false;
+
+        for(unsigned int x = 0; x < this->road_link_count; x++)
+        {
+            for(unsigned int y = 0; y < this->road_links[x].destination_road_count; y++)
+            {
+                if(this->road_links[x].destination_roads[y] == i)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if(found)
+               break;
+        }
+
+        if(!found)
+        {
+            this->input_roads[found_count] = i;
+            found_count++;
+        }
+    }
+}
+
 signed int** Model::init_empty_cells()
 {
     signed int** cells = new signed int*[this->road_count];
@@ -183,13 +239,13 @@ signed int** Model::init_empty_cells()
 }
 
 void Model::init_vehicles()
-{
-    for(unsigned int x = 0; x < this->road_count; x++)
+{  
+    for(unsigned int x = 0; x < this->input_road_count; x++)
     {
-        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
+        for(unsigned int y = 0; y < this->road_lengths[this->input_roads[x]]; y++)
         {
-            if(x == 0 && y < 5)    // FIXME: shoddy workmanship! COWBOYS!
-                this->cells[x][y] = 0;
+            if(y < 5)
+                this->cells[x][y] = 0;  // FIXME: shoddy workmanship! COWBOYS!
         }
     }
 }
@@ -228,7 +284,7 @@ void Model::display()
 
 void Model::vehicle_rules()
 {
-    this->model_density = cuda_process_model(this->cells, this->road_lengths);
+    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->generation);
 }
 
 void Model::synthesize_traffic()
