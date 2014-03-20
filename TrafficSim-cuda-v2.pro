@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -14,12 +14,15 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    model.cpp
+    model.cpp \
+    modelupdater.cpp
 
-HEADERS  += mainwindow.h \
-    model.h
+HEADERS += mainwindow.h \
+    model.h \
+    roadlink.h \
+    modelupdater.h
 
-FORMS    += mainwindow.ui
+FORMS += mainwindow.ui
 
 ####################
 # Cuda configuration
@@ -32,9 +35,9 @@ CUDA_SOURCES += cuda.cu
 CUDA_SDK = /usr/lib/nvidia-304/C/lib
 CUDA_DIR = /usr/lib/nvidia-cuda-toolkit
 
-SYSTEM_NAME = unix         # Depending on your system either 'Win32', 'x64', or 'Win64'
-SYSTEM_TYPE = 64            # '32' or '64', depending on your system
-CUDA_ARCH = sm_21           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
+SYSTEM_NAME = unix # Depending on your system either 'Win32', 'x64', or 'Win64'
+SYSTEM_TYPE = 64 # '32' or '64', depending on your system
+CUDA_ARCH = sm_21 # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
 NVCC_OPTIONS = --use_fast_math
 
 # include paths
