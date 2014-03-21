@@ -74,7 +74,7 @@
       <item>
        <widget class="QLabel" name="updateTrafficDensityLabel">
         <property name="text">
-         <string>Input Density:</string>
+         <string>Desired Traffic Density:</string>
         </property>
        </widget>
       </item>

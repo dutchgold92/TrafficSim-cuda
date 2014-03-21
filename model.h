@@ -15,13 +15,13 @@
 #include <vector>
 
 extern "C"
-void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count);
+void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count, unsigned int *_input_roads, unsigned int _input_road_count);
 
 extern "C"
 void cuda_deinit();
 
 extern "C"
-float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int generation);
+float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int generation, float desired_density);
 
 using namespace std;
 

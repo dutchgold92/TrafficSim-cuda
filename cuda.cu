@@ -14,6 +14,9 @@ road_link *road_links_d;
 signed int *cells_d;
 signed int *temp_cells_d;
 unsigned int *road_lengths_d;
+unsigned int *input_roads_d;
+unsigned int *input_road_device_indices_d;
+unsigned int input_road_count;
 unsigned int max_road_length;
 unsigned int road_count;
 unsigned int max_speed;
@@ -22,15 +25,37 @@ unsigned int blocks_per_road;
 unsigned int cell_count;
 unsigned int size;
 
-extern "C"
-void cuda_init(signed int **_cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count);
+__device__ void cuda_find_input_road_devices_indices(signed int *cells, unsigned int road_count, unsigned int *road_lengths, unsigned int *input_roads, unsigned int input_road_count, unsigned int *input_road_device_indices)
+{
+    for(unsigned int i = 0, road_device_index = 0; i < input_road_count; i++)
+    {
+        for(unsigned int x = 0; x < road_count; x++)
+        {
+            if(input_roads[i] == x)
+                input_road_device_indices[i] = road_device_index;
+            else
+                road_device_index += road_lengths[x];
+        }
 
-void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count)
+        road_device_index = 0;
+    }
+}
+
+__global__ void cuda_device_init(signed int *cells, unsigned int road_count, unsigned int *road_lengths, unsigned int *input_roads, unsigned int input_road_count, unsigned int *input_road_device_indices)
+{
+    cuda_find_input_road_devices_indices(cells, road_count, road_lengths, input_roads, input_road_count, input_road_device_indices);
+}
+
+extern "C"
+void cuda_init(signed int **_cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count, unsigned int *_input_roads, unsigned int _input_road_count);
+
+void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count, unsigned int *_input_roads, unsigned int _input_road_count)
 {
     max_road_length = _max_road_length;
     road_count = _road_count;
     max_speed = _max_speed;
     road_link_count = _road_link_count;
+    input_road_count = _input_road_count;
     blocks_per_road = ceil((float)max_road_length / (float)THREADS_PER_BLOCK);
 
     cell_count = 0;
@@ -44,6 +69,8 @@ void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max
     cudaMalloc((void**)&temp_cells_d, size);
     cudaMalloc((void**)&road_lengths_d, (sizeof(int) * road_count));
     cudaMalloc((void**)&road_links_d, (sizeof(road_link) * road_link_count));
+    cudaMalloc((void**)&input_roads_d, (sizeof(int) * input_road_count));
+    cudaMalloc((void**)&input_road_device_indices_d, (sizeof(int) * input_road_count));
 
     int *cells_d_ptr = &cells_d[0];
     int *temp_cells_d_ptr = &temp_cells_d[0];
@@ -58,6 +85,9 @@ void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max
 
     cudaMemcpy(road_lengths_d, road_lengths, (sizeof(int) * road_count), cudaMemcpyHostToDevice);
     cudaMemcpy(road_links_d, road_links, (sizeof(road_link) * road_link_count), cudaMemcpyHostToDevice);
+    cudaMemcpy(input_roads_d, _input_roads, (sizeof(int) * input_road_count), cudaMemcpyHostToDevice);
+
+    cuda_device_init<<<1,1>>>(cells_d, road_count, road_lengths_d, input_roads_d, input_road_count, input_road_device_indices_d);
 }
 
 extern "C"
@@ -68,6 +98,20 @@ void cuda_deinit()
     cudaFree(cells_d);
     cudaFree(temp_cells_d);
     cudaFree(road_lengths_d);
+}
+
+__global__ void cuda_synthesize_traffic(signed int *cells, unsigned int *input_roads, unsigned int *input_road_device_indices, unsigned int *road_lengths, unsigned int input_road_count, unsigned int vehicles_needed, unsigned int max_speed)
+{
+    unsigned int vehicles = ceil((float)vehicles_needed / (float)input_road_count);
+    unsigned int cell_index = input_road_device_indices[blockIdx.x];
+
+    for(unsigned int i = 0; i < vehicles && i < max_speed && i < road_lengths[input_roads[blockIdx.x]]; i++ && cell_index++)
+    {
+        if(cells[cell_index] < 0)
+            cells[cell_index] = max_speed;
+        else
+            return;
+    }
 }
 
 __device__ void cuda_toggle_road_link_origins(road_link *road_links, unsigned int road_link_index)
@@ -326,10 +370,10 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
 }
 
 extern "C"
-float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation);
+float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation, float desired_density);
 
 extern "C"
-float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation)
+float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation, float desired_density)
 {
     unsigned int vehicle_count = 0;
     unsigned int *vehicle_counts = new unsigned int[road_count];
@@ -364,6 +408,24 @@ float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigne
     if(generation % TOGGLE_ROAD_LINKS_ON_GENERATION_MULTIPLE == 0)
         cuda_toggle_road_links<<<road_link_count,1>>>(road_links_d);
 
+    float density = ((float)vehicle_count / (float)cell_count);
+
+    if(density < desired_density)
+    {
+        unsigned int vehicles_needed = 0;
+
+        for(unsigned int i = 0; i < cell_count; i++)
+        {
+            if(((float)vehicles_needed / (float)cell_count) > (desired_density - density))
+            {
+                cuda_synthesize_traffic<<<input_road_count,1>>>(cells_d, input_roads_d, input_road_device_indices_d, road_lengths_d, input_road_count, vehicles_needed, max_speed);
+                break;
+            }
+            else
+                vehicles_needed++;
+        }
+    }
+
 //    cout << cudaGetErrorString(cudaGetLastError()) << endl;
-    return((float)vehicle_count / (float)cell_count);
+    return(density);
 }

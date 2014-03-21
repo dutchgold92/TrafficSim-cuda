@@ -49,7 +49,7 @@ void Model::init()
     this->init_road_links();
     this->identify_input_roads();
     this->init_vehicles();
-    cuda_init(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_links, this->road_link_count);
+    cuda_init(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_links, this->road_link_count, this->input_roads, this->input_road_count);
 }
 
 void Model::init_roads()
@@ -284,7 +284,7 @@ void Model::display()
 
 void Model::vehicle_rules()
 {
-    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->generation);
+    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->generation, this->desired_density);
 }
 
 void Model::synthesize_traffic()
