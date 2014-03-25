@@ -24,6 +24,8 @@ unsigned int road_link_count;
 unsigned int blocks_per_road;
 unsigned int cell_count;
 unsigned int size;
+signed int follow_vehicle_road;
+signed int follow_vehicle_cell;
 
 __device__ void cuda_find_input_road_devices_indices(signed int *cells, unsigned int road_count, unsigned int *road_lengths, unsigned int *input_roads, unsigned int input_road_count, unsigned int *input_road_device_indices)
 {
@@ -57,6 +59,8 @@ void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max
     road_link_count = _road_link_count;
     input_road_count = _input_road_count;
     blocks_per_road = ceil((float)max_road_length / (float)THREADS_PER_BLOCK);
+    follow_vehicle_cell = -1;
+    follow_vehicle_road = -1;
 
     cell_count = 0;
     size = 0;
@@ -98,6 +102,34 @@ void cuda_deinit()
     cudaFree(cells_d);
     cudaFree(temp_cells_d);
     cudaFree(road_lengths_d);
+}
+
+extern "C"
+void cuda_set_follow_vehicle(unsigned int road, unsigned int cell);
+
+extern "C"
+void cuda_set_follow_vehicle(unsigned int road, unsigned int cell)
+{
+    follow_vehicle_road = road;
+    follow_vehicle_cell = cell;
+}
+
+extern "C"
+unsigned int cuda_get_follow_vehicle_road();
+
+extern "C"
+unsigned int cuda_get_follow_vehicle_road()
+{
+    return follow_vehicle_road;
+}
+
+extern "C"
+unsigned int cuda_get_follow_vehicle_cell();
+
+extern "C"
+unsigned int cuda_get_follow_vehicle_cell()
+{
+    return follow_vehicle_cell;
 }
 
 __global__ void cuda_synthesize_traffic(signed int *cells, unsigned int *input_roads, unsigned int *input_road_device_indices, unsigned int *road_lengths, unsigned int input_road_count, unsigned int vehicles_needed, unsigned int max_speed)
@@ -296,7 +328,7 @@ __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index
     return UINT_MAX;
 }
 
-__global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed, unsigned int *vehicle_counts, unsigned int random_seed, road_link *road_links, unsigned int road_link_count)
+__global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed, unsigned int *vehicle_counts, unsigned int random_seed, road_link *road_links, unsigned int road_link_count, signed int *follow_vehicle_road, signed int *follow_vehicle_cell)
 {
     unsigned int index = threadIdx.x + blockIdx.x * blockDim.x;
     unsigned int road = UINT_MAX;
@@ -348,7 +380,12 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
         temp_cells[index] = -1;
 
         if(new_road_position < road_length)
+        {
             temp_cells[new_position] = cells[index];
+
+            if(*follow_vehicle_road == road && *follow_vehicle_cell == road_index)
+                *follow_vehicle_cell = new_road_position;
+        }
         else
         {
             signed int next_road = cuda_get_next_road(road, road_links, road_link_count);
@@ -356,7 +393,22 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
             if(next_road >= 0)
             {
                 new_position = (cuda_get_first_index_of_road(next_road, road_lengths)) + (cells[index] - (road_lengths[road] - road_index));
+                unsigned int new_road_position = (0 + (cells[index] - (road_lengths[road] - road_index)));
                 temp_cells[new_position] = cells[index];
+
+                if(*follow_vehicle_road == road && *follow_vehicle_cell == road_index)
+                {
+                    *follow_vehicle_road = next_road;
+                    *follow_vehicle_cell = new_road_position;
+                }
+            }
+            else
+            {
+                if(*follow_vehicle_road == road && *follow_vehicle_cell == road_index)
+                {
+                    *follow_vehicle_road = -1;
+                    *follow_vehicle_cell = -1;
+                }
             }
         }
     }
@@ -379,15 +431,21 @@ float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigne
     unsigned int *vehicle_counts = new unsigned int[road_count];
     unsigned int *vehicle_counts_d;
     unsigned int random_seed;
+    signed int *follow_vehicle_road_d;
+    signed int *follow_vehicle_cell_d;
 
     for(unsigned int i = 0; i < road_count; i++)
         vehicle_counts[i] = 0;
 
     random_seed = rand() % UINT_MAX;
     cudaMalloc((void**)&vehicle_counts_d, (sizeof(int) * road_count));
+    cudaMalloc((void**)&follow_vehicle_road_d, sizeof(int));
+    cudaMalloc((void**)&follow_vehicle_cell_d, sizeof(int));
     cudaMemcpy(vehicle_counts_d, vehicle_counts, (sizeof(int) * road_count), cudaMemcpyHostToDevice);
+    cudaMemcpy(follow_vehicle_road_d, &follow_vehicle_road, sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(follow_vehicle_cell_d, &follow_vehicle_cell, sizeof(int), cudaMemcpyHostToDevice);
 
-    cuda_apply_rules<<<(blocks_per_road * road_count), THREADS_PER_BLOCK>>>(cells_d, temp_cells_d, road_lengths_d, road_count, max_speed, vehicle_counts_d, random_seed, road_links_d, road_link_count);
+    cuda_apply_rules<<<(blocks_per_road * road_count), THREADS_PER_BLOCK>>>(cells_d, temp_cells_d, road_lengths_d, road_count, max_speed, vehicle_counts_d, random_seed, road_links_d, road_link_count, follow_vehicle_road_d, follow_vehicle_cell_d);
 
     int *temp_cells_d_ptr = &temp_cells_d[0];
 
@@ -398,11 +456,15 @@ float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigne
     }
 
     cudaMemcpy(cells_d, temp_cells_d, size, cudaMemcpyDeviceToDevice);
+    cudaMemcpy(&follow_vehicle_road, follow_vehicle_road_d, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&follow_vehicle_cell, follow_vehicle_cell_d, sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(vehicle_counts, vehicle_counts_d, (sizeof(int) * road_count), cudaMemcpyDeviceToHost);
     for(unsigned int i = 0; i < road_count; i++)
         vehicle_count += vehicle_counts[i];
 
     cudaFree(vehicle_counts_d);
+    cudaFree(follow_vehicle_road_d);
+    cudaFree(follow_vehicle_cell_d);
     delete[] vehicle_counts;
 
     if(generation % TOGGLE_ROAD_LINKS_ON_GENERATION_MULTIPLE == 0)

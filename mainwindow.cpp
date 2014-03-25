@@ -17,6 +17,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->gfx->setScene(this->scene);
     ui->gfx->show();
     ui->closePlotButton->hide();
+    this->follow_vehicle_road = -1;
+    this->follow_vehicle_cell = -1;
 
     QString updateValueString;
     updateValueString.append("(");
@@ -47,6 +49,7 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     connect(this, SIGNAL(model_updated()), this, SLOT(draw_model()), Qt::QueuedConnection);
+    connect(this->scene, SIGNAL(selectionChanged()), this, SLOT(scene_selection()), Qt::QueuedConnection);
     this->draw_model();
     this->model_updater = new ModelUpdater(this, this->model);
     this->model_updater->start();
@@ -61,6 +64,8 @@ MainWindow::~MainWindow()
 void MainWindow::draw_model()
 {
     this->scene->clear();
+    this->follow_vehicle_road = cuda_get_follow_vehicle_road();
+    this->follow_vehicle_cell = cuda_get_follow_vehicle_cell();
     this->draw_road(0, true, 0, 0);
     this->scene->setSceneRect(this->scene->itemsBoundingRect());
 }
@@ -95,17 +100,7 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
                     break;
             }
 
-            QGraphicsRectItem *cell = new QGraphicsRectItem(x, y, this->cell_size, this->cell_size);
-
-            if(this->model->get_cells()[road_index][i] >= 0)
-                cell->setBrush(QBrush(Qt::green));
-            else
-                cell->setBrush(QBrush(Qt::white));
-
-            scene->addItem(cell);
-
-            if(this->show_road_directions && (i == (this->model->get_road_lengths()[road_index] / 2)))
-                this->draw_directional_arrow(x, y, direction);
+            this->draw_cell(road_index, i, x, y, this->cell_size, this->cell_size, direction);
         }
     }
     else
@@ -128,17 +123,7 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
                     break;
             }
 
-            QGraphicsRectItem *cell = new QGraphicsRectItem(x, y, this->cell_size, this->cell_size);
-
-            if(this->model->get_cells()[road_index][i] >= 0)
-                cell->setBrush(QBrush(Qt::green));
-            else
-                cell->setBrush(QBrush(Qt::white));
-
-            scene->addItem(cell);
-
-            if(this->show_road_directions && (i == (this->model->get_road_lengths()[road_index] / 2)))
-                this->draw_directional_arrow(x, y, direction);
+            this->draw_cell(road_index, i, x, y, this->cell_size, this->cell_size, direction);
         }
     }
 
@@ -221,6 +206,19 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
             }
         }
     }
+}
+
+void MainWindow::draw_cell(unsigned int road_index, unsigned int cell_index, qreal x, qreal y, qreal cell_width, qreal cell_height, Model::Direction direction)
+{
+    bool is_empty = (this->model->get_cells()[road_index][cell_index] < 0);
+    GraphicsCellItem *cell = new GraphicsCellItem(is_empty, road_index, cell_index, x, y, cell_width, cell_height);
+    this->scene->addItem(cell);
+
+    if(this->follow_vehicle_road == road_index && this->follow_vehicle_cell == cell_index)
+        cell->setSelected(true);
+
+    if(this->show_road_directions && (cell_index == (this->model->get_road_lengths()[road_index] / 2)))
+        this->draw_directional_arrow(x, y, direction);
 }
 
 void MainWindow::on_playPauseButton_pressed()
@@ -309,4 +307,16 @@ void MainWindow::on_densityInput_valueChanged(int value)
     string.append(")");
     ui->densityInputValueLabel->setText(string);
     this->model->set_desired_density(((float)ui->densityInput->value()) / 100);
+}
+
+void MainWindow::scene_selection()
+{
+    if(this->scene->selectedItems().isEmpty())
+        return;
+    else
+    {
+        GraphicsCellItem *selected = qgraphicsitem_cast<GraphicsCellItem*>(this->scene->selectedItems().back());
+        selected->setSelected(true);
+        cuda_set_follow_vehicle(selected->get_road(), selected->get_cell());
+    }
 }
