@@ -64,7 +64,7 @@ private:
     signed int** init_empty_cells();
     void init_vehicles();
     void synthesize_traffic();
-    void vehicle_rules();
+    void process();
     // legacy serial functions
     void accelerate_rule();
     void decelerate_rule();

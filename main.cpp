@@ -11,7 +11,7 @@ void benchmark()
     qint64 m_seconds;
     timer.start();
 
-    for(int i = 0; i < 10; i++)
+    for(int i = 0; i < 100; i++)
     {
 //        m->display();
         m->update();
@@ -24,10 +24,10 @@ void benchmark()
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    MainWindow w;
-    w.show();
-    return a.exec();
+//    QApplication a(argc, argv);
+//    MainWindow w;
+//    w.show();
+//    return a.exec();
 
-//    benchmark();
+    benchmark();
 }
