@@ -320,3 +320,8 @@ void MainWindow::scene_selection()
         cuda_set_follow_vehicle(selected->get_road(), selected->get_cell());
     }
 }
+
+void MainWindow::on_realisticTrafficSynthesisInput_toggled(bool checked)
+{
+    this->model->set_realistic_traffic_synthesis(checked);
+}

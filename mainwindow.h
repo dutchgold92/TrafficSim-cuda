@@ -54,6 +54,8 @@ private slots:
     void on_updateIntervalInput_valueChanged(int value);
     void on_densityInput_valueChanged(int value);
     void scene_selection();
+    void on_realisticTrafficSynthesisInput_toggled(bool checked);
+
 signals:
     void model_updated();
 };

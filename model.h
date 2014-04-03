@@ -21,7 +21,7 @@ extern "C"
 void cuda_deinit();
 
 extern "C"
-float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int generation, float desired_density);
+float cuda_process_model(signed int** cells, unsigned int* road_lengths, unsigned int generation, float desired_density, bool realistic_traffic_synthesis);
 
 using namespace std;
 
@@ -43,6 +43,7 @@ public:
     void display();
     unsigned long get_generation();
     void set_desired_density(float desired_density);
+    void set_realistic_traffic_synthesis(bool realistic_traffic_synthesis);
 private:
     signed int **cells;
     road_link *road_links;
@@ -57,6 +58,7 @@ private:
     float desired_density;
     float model_density;
     unsigned long generation;
+    bool realistic_traffic_synthesis;
     void init();
     void init_roads();
     void init_road_links();

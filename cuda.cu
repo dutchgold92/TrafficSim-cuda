@@ -132,17 +132,44 @@ unsigned int cuda_get_follow_vehicle_cell()
     return follow_vehicle_cell;
 }
 
-__global__ void cuda_synthesize_traffic(signed int *cells, unsigned int *input_roads, unsigned int *input_road_device_indices, unsigned int *road_lengths, unsigned int input_road_count, unsigned int vehicles_needed, unsigned int max_speed)
+__device__ unsigned int cuda_get_first_index_of_road(unsigned int road, unsigned int *road_lengths)
 {
-    unsigned int vehicles = ceil((float)vehicles_needed / (float)input_road_count);
-    unsigned int cell_index = input_road_device_indices[blockIdx.x];
+    unsigned int index = 0;
 
-    for(unsigned int i = 0; i < vehicles && i < max_speed && i < road_lengths[input_roads[blockIdx.x]]; i++ && cell_index++)
+    for(unsigned int i = 0; i < road; i++)
+        index += road_lengths[i];
+
+    return index;
+}
+
+__global__ void cuda_synthesize_traffic(signed int *cells, unsigned int *input_roads, unsigned int *input_road_device_indices, unsigned int *road_lengths, unsigned int input_road_count, unsigned int vehicles_needed, unsigned int max_speed, unsigned int road_count, bool realistic_traffic_synthesis)
+{
+    unsigned int vehicles;
+    unsigned int cell_index;
+
+    if(realistic_traffic_synthesis)
     {
-        if(cells[cell_index] < 0)
-            cells[cell_index] = max_speed;
-        else
-            return;
+        vehicles = ceil((float)vehicles_needed / (float)input_road_count);
+        cell_index = input_road_device_indices[blockIdx.x];
+
+        for(unsigned int i = 0; i < vehicles && i < max_speed && i < road_lengths[input_roads[blockIdx.x]]; i++ && cell_index++)
+        {
+            if(cells[cell_index] < 0)
+                cells[cell_index] = max_speed;
+            else
+                return;
+        }
+    }
+    else
+    {
+        vehicles = ceil((float)vehicles_needed / (float)road_count);
+        cell_index = cuda_get_first_index_of_road(blockIdx.x, road_lengths);
+
+        for(unsigned int i = 0; i < vehicles && i < road_lengths[blockIdx.x]; i++ && cell_index++)
+        {
+            if(cells[cell_index] < 0)
+                cells[cell_index] = max_speed;
+        }
     }
 }
 
@@ -287,16 +314,6 @@ __device__ signed int cuda_get_road_link(unsigned int origin_road, unsigned int 
     return -1;
 }
 
-__device__ unsigned int cuda_get_first_index_of_road(unsigned int road, unsigned int *road_lengths)
-{
-    unsigned int index = 0;
-
-    for(unsigned int i = 0; i < road; i++)
-        index += road_lengths[i];
-
-    return index;
-}
-
 __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index, unsigned int road, unsigned int road_index, unsigned int road_length, unsigned int *road_lengths, road_link *road_links, unsigned int road_link_count, unsigned int max_speed)
 {
     unsigned int clearance = 0;
@@ -422,10 +439,10 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
 }
 
 extern "C"
-float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation, float desired_density);
+float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation, float desired_density, bool realistic_traffic_synthesis);
 
 extern "C"
-float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation, float desired_density)
+float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation, float desired_density, bool realistic_traffic_synthesis)
 {
     unsigned int vehicle_count = 0;
     unsigned int *vehicle_counts = new unsigned int[road_count];
@@ -480,7 +497,11 @@ float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigne
         {
             if(((float)vehicles_needed / (float)cell_count) > (desired_density - density))
             {
-                cuda_synthesize_traffic<<<input_road_count,1>>>(cells_d, input_roads_d, input_road_device_indices_d, road_lengths_d, input_road_count, vehicles_needed, max_speed);
+                if(realistic_traffic_synthesis)
+                    cuda_synthesize_traffic<<<input_road_count,1>>>(cells_d, input_roads_d, input_road_device_indices_d, road_lengths_d, input_road_count, vehicles_needed, max_speed, road_count, realistic_traffic_synthesis);
+                else
+                    cuda_synthesize_traffic<<<road_count,1>>>(cells_d, input_roads_d, input_road_device_indices_d, road_lengths_d, input_road_count, vehicles_needed, max_speed, road_count, realistic_traffic_synthesis);
+
                 break;
             }
             else
