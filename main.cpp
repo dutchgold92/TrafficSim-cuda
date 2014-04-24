@@ -13,7 +13,6 @@ void benchmark()
 
     for(int i = 0; i < 100; i++)
     {
-//        m->display();
         m->update();
     }
 
@@ -24,10 +23,11 @@ void benchmark()
 
 int main(int argc, char *argv[])
 {
+     benchmark();
+     return 0;
+
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
     return a.exec();
-
-//    benchmark();
 }

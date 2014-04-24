@@ -102,6 +102,9 @@ void cuda_deinit()
     cudaFree(cells_d);
     cudaFree(temp_cells_d);
     cudaFree(road_lengths_d);
+    cudaFree(road_links_d);
+    cudaFree(input_roads_d);
+    cudaFree(input_road_device_indices_d);
 }
 
 extern "C"
@@ -509,6 +512,5 @@ float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigne
         }
     }
 
-//    cout << cudaGetErrorString(cudaGetLastError()) << endl;
     return(density);
 }

@@ -13,6 +13,7 @@ Model::~Model()
     delete[] this->road_directions;
     delete[] this->road_lengths;
     delete[] this->road_links;
+    delete[] this->input_roads;
 }
 
 signed int** Model::get_cells()
@@ -34,7 +35,6 @@ void Model::init()
 {
     this->generation = 0;
     this->road_count = 12;
-//    this->road_count = DEFAULT_ROAD_COUNT;
     this->road_directions = new Direction[this->road_count];
     this->road_lengths = new unsigned int[this->road_count];
     this->vehicle_speed_limit = DEFAULT_VEHICLE_SPEED_LIMIT;
@@ -55,12 +55,6 @@ void Model::init()
 
 void Model::init_roads()
 {
-//    for(unsigned int i = 0; i < this->road_count; i++)
-//    {
-//        this->road_lengths[i] = DEFAULT_ROAD_LENGTH;
-//        this->road_directions[i] = this->Right;
-//    }
-
     this->road_lengths[0] = 25;
     this->road_directions[0] = this->Right;
     this->road_lengths[1] = 25;
@@ -91,21 +85,6 @@ void Model::init_roads()
 
 void Model::init_road_links()
 {
-//    this->road_link_count = (this->road_count - 1);
-//    this->road_links = new road_link[this->road_link_count];
-
-//    for(int i = 1; i < this->road_count; i++)
-//    {
-//        road_link r;
-//        r.origin_road_count = 1;
-//        r.destination_road_count = 1;
-//        r.origin_roads[0] = (i - 1);
-//        r.destination_roads[0] = i;
-//        r.origin_roads_active[0] = true;
-//        r.destination_roads_active[0] = true;
-//        this->road_links[i - 1] = r;
-//    }
-
     road_link r0;
     r0.origin_road_count = 2;
     r0.destination_road_count = 1;
@@ -259,12 +238,22 @@ signed int** Model::init_empty_cells()
 
 void Model::init_vehicles()
 {  
-    for(unsigned int x = 0; x < this->input_road_count; x++)
+    float required_density = DEFAULT_DESIRED_DENSITY;
+    unsigned int total_cells = 0;
+    for(unsigned int i = 0; i < this->road_count; i++)
+        total_cells += this->road_lengths[i];
+    unsigned int required_vehicles = (total_cells * required_density);
+    unsigned int actual_vehicles = 0;
+
+    while(actual_vehicles < required_vehicles)
     {
-        for(unsigned int y = 0; y < this->road_lengths[this->input_roads[x]]; y++)
+        unsigned int road = (rand() % this->road_count);
+        unsigned int cell = (rand() % this->road_lengths[road]);
+
+        if(this->cells[road][cell] < 0)
         {
-            if(y < 5)
-                this->cells[x][y] = 0;  // FIXME: shoddy workmanship! COWBOYS!
+            this->cells[road][cell] = this->vehicle_speed_limit;
+            actual_vehicles++;
         }
     }
 }
@@ -273,13 +262,6 @@ void Model::update()
 {
     this->process();
     this->generation++;
-
-//    this->accelerate_rule();
-//    this->decelerate_rule();
-//    this->random_rule();
-//    this->progress_rule();
-//    this->synthesize_traffic();
-//    this->generation++;
 }
 
 void Model::display()
@@ -297,8 +279,6 @@ void Model::display()
         cout << endl;
     }
 
-//    cout << "Model density: " << this->model_density << endl;
-
     cout << endl;
 }
 
@@ -307,173 +287,9 @@ void Model::process()
     this->model_density = cuda_process_model(this->cells, this->road_lengths, this->generation, this->desired_density, this->realistic_traffic_synthesis);
 }
 
-void Model::synthesize_traffic()
-{
-    unsigned int iterations = 0;
-
-    while(this->get_model_density() < this->desired_density && iterations < (this->road_count * this->road_count))
-    {
-        unsigned int road = (rand() % this->road_count);
-
-        for(unsigned int i = this->vehicle_speed_limit; i < this->road_lengths[road] && i-->0;)
-        {
-            if(this->cells[road][i] >= 0)
-                continue;
-            else
-                this->cells[road][i] = 1;
-        }
-
-        iterations++;
-    }
-}
-
 float Model::get_model_density()
 {
     return this->model_density;
-
-//    float vehicles = 0;
-//    float cells = 0;
-
-//    for(unsigned int x = 0; x < this->road_count; x++)
-//    {
-//        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
-//        {
-//            if(this->cells[x][y] >= 0)
-//                vehicles++;
-//        }
-
-//        cells += this->road_lengths[x];
-//    }
-
-//    return(vehicles / cells);
-}
-
-float Model::get_road_density(unsigned int road_index)
-{
-    if(road_index >= this->road_count)
-        return 0;
-
-    float vehicles = 0;
-
-    for(unsigned int i = 0; i < this->road_lengths[road_index]; i++)
-        if(this->cells[road_index][i] >= 0)
-            vehicles++;
-
-    return(vehicles / (float)this->road_lengths[road_index]);
-}
-
-void Model::accelerate_rule()
-{
-    for(unsigned int x = 0; x < this->road_count; x++)
-    {
-        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
-        {
-            if(this->cells[x][y] < 0)
-                continue;  // skip empty
-            else if(this->cells[x][y] < this->vehicle_speed_limit)
-            {
-                if(this->get_clearance_ahead(x, y) > (this->cells[x][y] + 1))
-                    this->cells[x][y]++;
-            }
-        }
-    }
-}
-
-void Model::decelerate_rule()
-{
-    for(unsigned int x = 0; x < this->road_count; x++)
-    {
-        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
-        {
-            if(this->cells[x][y] < 0)
-                continue;   // skip empty
-            else if(this->cells[x][y] > 0)
-            {
-                unsigned int clearance = this->get_clearance_ahead(x, y);
-
-                if(clearance <= this->cells[x][y])
-                    this->cells[x][y] = (clearance - 1);
-            }
-        }
-    }
-}
-
-void Model::random_rule()
-{
-    for(unsigned int x = 0; x < this->road_count; x++)
-    {
-        for(unsigned int y = 0; y < this->road_lengths[x]; y++)
-        {
-            if(this->cells[x][y] > 0)
-            {
-                if((rand() % 10) == 0)  // FIXME: shoddy workmanship!
-                    this->cells[x][y]--;
-            }
-        }
-    }
-}
-
-void Model::progress_rule()
-{
-    for(unsigned int x = 0; x < this->road_count; x++)
-    {
-        for(unsigned int y = this->road_lengths[x]; y--> 0;)
-        {
-            if(this->cells[x][y] <= 0)
-                continue;   // skip empty, skip stopped
-            else if(this->cells[x][y] > 0)
-            {
-                unsigned int new_position = (y + this->cells[x][y]);
-
-                if(new_position < this->road_lengths[x])
-                {
-                    this->cells[x][new_position] = this->cells[x][y];
-                    this->cells[x][y] = -1;
-                }
-            }
-        }
-    }
-}
-
-unsigned int Model::get_clearance_ahead(unsigned int road, unsigned int cell)
-{
-    for(unsigned int i = (cell + 1); i < this->road_lengths[road]; i++)
-    {
-        if(this->cells[road][i] >= 0)
-            return(i - cell);
-    }
-
-    return numeric_limits<unsigned int>::max();
-}
-
-void Model::toggle_road_links()
-{
-//    vector<road_link*> links;
-
-//    for(unsigned int x = 0; x < this->road_count; x++)
-//    {
-//        for(unsigned int y = 0; y < this->road_link_count; y++)
-//        {
-//            if(this->road_links[y].origin_road == x)
-//                links.push_back(&this->road_links[y]);
-//        }
-
-//        if(!links.empty())
-//        {
-//            unsigned int new_active_index = (rand() % links.size());
-//            links.at(new_active_index)->active = true;
-
-//            for(unsigned int i = 0; i < links.size(); i++)
-//            {
-//                if(i == new_active_index)
-//                    continue;
-//                else
-//                    links.at(i)->active = false;
-//            }
-
-//            links.clear();
-//        }
-//    }
 }
 
 unsigned long Model::get_generation()

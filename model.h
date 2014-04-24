@@ -1,9 +1,5 @@
 #ifndef MODEL_H
 #define MODEL_H
-#define DEFAULT_ROAD_COUNT 50
-#define DEFAULT_ROAD_LENGTH 10000
-//#define DEFAULT_ROAD_COUNT 3
-//#define DEFAULT_ROAD_LENGTH 30
 #define DEFAULT_VEHICLE_SPEED_LIMIT 5
 #define DEFAULT_DESIRED_DENSITY 0.2
 
@@ -65,15 +61,7 @@ private:
     void identify_input_roads();
     signed int** init_empty_cells();
     void init_vehicles();
-    void synthesize_traffic();
     void process();
-    // legacy serial functions
-    void accelerate_rule();
-    void decelerate_rule();
-    void random_rule();
-    void progress_rule();
-    unsigned int get_clearance_ahead(unsigned int road, unsigned int cell);
-    void toggle_road_links();
 };
 
 #endif // MODEL_H
