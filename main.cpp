@@ -23,8 +23,8 @@ void benchmark()
 
 int main(int argc, char *argv[])
 {
-     benchmark();
-     return 0;
+//     benchmark();
+//     return 0;
 
     QApplication a(argc, argv);
     MainWindow w;
