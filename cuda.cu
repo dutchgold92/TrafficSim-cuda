@@ -27,7 +27,13 @@ unsigned int size;
 signed int follow_vehicle_road;
 signed int follow_vehicle_cell;
 
-__device__ void cuda_find_input_road_devices_indices(signed int *cells, unsigned int road_count, unsigned int *road_lengths, unsigned int *input_roads, unsigned int input_road_count, unsigned int *input_road_device_indices)
+/**
+ * cuda_find_input_road_device_indices()
+ *
+ * Maps input road indices from host-cells to their memory start locations in device-cells.
+ * Stores results in parameter input_road_device_indices.
+ */
+__device__ void cuda_find_input_road_device_indices(signed int *cells, unsigned int road_count, unsigned int *road_lengths, unsigned int *input_roads, unsigned int input_road_count, unsigned int *input_road_device_indices)
 {
     for(unsigned int i = 0, road_device_index = 0; i < input_road_count; i++)
     {
@@ -43,9 +49,12 @@ __device__ void cuda_find_input_road_devices_indices(signed int *cells, unsigned
     }
 }
 
+/**
+ *
+ */
 __global__ void cuda_device_init(signed int *cells, unsigned int road_count, unsigned int *road_lengths, unsigned int *input_roads, unsigned int input_road_count, unsigned int *input_road_device_indices)
 {
-    cuda_find_input_road_devices_indices(cells, road_count, road_lengths, input_roads, input_road_count, input_road_device_indices);
+    cuda_find_input_road_device_indices(cells, road_count, road_lengths, input_roads, input_road_count, input_road_device_indices);
 }
 
 extern "C"
