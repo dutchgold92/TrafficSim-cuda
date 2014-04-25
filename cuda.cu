@@ -494,22 +494,12 @@ float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigne
 
     if(density < desired_density)
     {
-        unsigned int vehicles_needed = 0;
+        unsigned int vehicles_needed = (cell_count * (desired_density - density));
 
-        for(unsigned int i = 0; i < cell_count; i++)
-        {
-            if(((float)vehicles_needed / (float)cell_count) > (desired_density - density))
-            {
-                if(realistic_traffic_synthesis)
-                    cuda_synthesize_traffic<<<input_road_count,1>>>(cells_d, input_roads_d, input_road_device_indices_d, road_lengths_d, input_road_count, vehicles_needed, max_speed, road_count, realistic_traffic_synthesis);
-                else
-                    cuda_synthesize_traffic<<<road_count,1>>>(cells_d, input_roads_d, input_road_device_indices_d, road_lengths_d, input_road_count, vehicles_needed, max_speed, road_count, realistic_traffic_synthesis);
-
-                break;
-            }
-            else
-                vehicles_needed++;
-        }
+        if(realistic_traffic_synthesis)
+            cuda_synthesize_traffic<<<input_road_count,1>>>(cells_d, input_roads_d, input_road_device_indices_d, road_lengths_d, input_road_count, vehicles_needed, max_speed, road_count, realistic_traffic_synthesis);
+        else
+            cuda_synthesize_traffic<<<road_count,1>>>(cells_d, input_roads_d, input_road_device_indices_d, road_lengths_d, input_road_count, vehicles_needed, max_speed, road_count, realistic_traffic_synthesis);
     }
 
     return(density);
