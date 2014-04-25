@@ -50,13 +50,20 @@ __device__ void cuda_find_input_road_device_indices(signed int *cells, unsigned 
 }
 
 /**
+ * cuda_device_init()
  *
+ * Initialisation steps that must be done from device code.
  */
 __global__ void cuda_device_init(signed int *cells, unsigned int road_count, unsigned int *road_lengths, unsigned int *input_roads, unsigned int input_road_count, unsigned int *input_road_device_indices)
 {
     cuda_find_input_road_device_indices(cells, road_count, road_lengths, input_roads, input_road_count, input_road_device_indices);
 }
 
+/**
+ * cuda_init()
+ *
+ * Initialises the device and associated data.
+ */
 extern "C"
 void cuda_init(signed int **_cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count, unsigned int *_input_roads, unsigned int _input_road_count);
 
@@ -103,6 +110,11 @@ void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max
     cuda_device_init<<<1,1>>>(cells_d, road_count, road_lengths_d, input_roads_d, input_road_count, input_road_device_indices_d);
 }
 
+/**
+ * cuda_deinit()
+ *
+ * Destructor for device data.
+ */
 extern "C"
 void cuda_deinit();
 
@@ -116,6 +128,11 @@ void cuda_deinit()
     cudaFree(input_road_device_indices_d);
 }
 
+/**
+ * cuda_set_follow_vehicle()
+ *
+ * Sets the road and cell for a vehicle to track.
+ */
 extern "C"
 void cuda_set_follow_vehicle(unsigned int road, unsigned int cell);
 
@@ -126,6 +143,11 @@ void cuda_set_follow_vehicle(unsigned int road, unsigned int cell)
     follow_vehicle_cell = cell;
 }
 
+/**
+ * cuda_get_follow_vehicle_road()
+ *
+ * Returns the current road of the vehicle being tracked.
+ */
 extern "C"
 unsigned int cuda_get_follow_vehicle_road();
 
@@ -135,6 +157,11 @@ unsigned int cuda_get_follow_vehicle_road()
     return follow_vehicle_road;
 }
 
+/**
+ * cuda_get_follow_vehicle_cell()
+ *
+ * Returns the current cell of the vehicle being tracked.
+ */
 extern "C"
 unsigned int cuda_get_follow_vehicle_cell();
 
@@ -144,6 +171,11 @@ unsigned int cuda_get_follow_vehicle_cell()
     return follow_vehicle_cell;
 }
 
+/**
+ * cuda_get_first_index_of_road()
+ *
+ * Returns first index from cells_d which represents cells[road].
+ */
 __device__ unsigned int cuda_get_first_index_of_road(unsigned int road, unsigned int *road_lengths)
 {
     unsigned int index = 0;
@@ -154,6 +186,11 @@ __device__ unsigned int cuda_get_first_index_of_road(unsigned int road, unsigned
     return index;
 }
 
+/**
+ * cuda_synthesize_traffic()
+ *
+ * Generates new vehicular traffic within the model.
+ */
 __global__ void cuda_synthesize_traffic(signed int *cells, unsigned int *input_roads, unsigned int *input_road_device_indices, unsigned int *road_lengths, unsigned int input_road_count, unsigned int vehicles_needed, unsigned int max_speed, unsigned int road_count, bool realistic_traffic_synthesis)
 {
     unsigned int vehicles;
@@ -185,6 +222,11 @@ __global__ void cuda_synthesize_traffic(signed int *cells, unsigned int *input_r
     }
 }
 
+/**
+ * cuda_toggle_road_link_origins()
+ *
+ * Switches active origins of road_links.
+ */
 __device__ void cuda_toggle_road_link_origins(road_link *road_links, unsigned int road_link_index)
 {
     bool toggled = false;
@@ -210,6 +252,11 @@ __device__ void cuda_toggle_road_link_origins(road_link *road_links, unsigned in
     }
 }
 
+/**
+ * cuda_toggle_road_link_destinations()
+ *
+ * Switches active destinations of road_links.
+ */
 __device__ void cuda_toggle_road_link_destinations(road_link *road_links, unsigned int road_link_index)
 {
     bool toggled = false;
@@ -235,12 +282,22 @@ __device__ void cuda_toggle_road_link_destinations(road_link *road_links, unsign
     }
 }
 
+/**
+ * cuda_toggle_road_links()
+ *
+ * Switches active road_link paths.
+ */
 __global__ void cuda_toggle_road_links(road_link *road_links)
 {
     cuda_toggle_road_link_origins(road_links, blockIdx.x);
     cuda_toggle_road_link_destinations(road_links, blockIdx.x);
 }
 
+/**
+ * cuda_hash()
+ *
+ * Hashes the given seed.
+ */
 __device__ unsigned int cuda_hash(unsigned int a)
 {
     a = (a+0x7ed55d16) + (a<<12);
@@ -252,6 +309,11 @@ __device__ unsigned int cuda_hash(unsigned int a)
     return a;
 }
 
+/**
+ * cuda_get_random()
+ *
+ * Generates and returns a random number between 0 and 1.
+ */
 __device__ float cuda_get_random(unsigned int seed_input)
 {
     unsigned int seed = cuda_hash(seed_input);
@@ -289,6 +351,12 @@ __device__ signed int cuda_get_next_road(unsigned int origin_road, road_link *ro
     return -2;
 }
 
+/**
+ * cuda_get_road_link()
+ *
+ * Returns index of a road_link connecting origin_road and destination_road,
+ * or returns -1 if none exists.
+ */
 __device__ signed int cuda_get_road_link(unsigned int origin_road, unsigned int destination_road, road_link *road_links, unsigned int road_link_count)
 {
     for(unsigned int i = 0; i < road_link_count; i++)
@@ -326,6 +394,12 @@ __device__ signed int cuda_get_road_link(unsigned int origin_road, unsigned int 
     return -1;
 }
 
+/**
+ * cuda_get_clearance()
+ *
+ * Returns the clearance from given cell to the next vehicle.
+ * Returns UINT_MAX if clearance is greater than max_speed.
+ */
 __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index, unsigned int road, unsigned int road_index, unsigned int road_length, unsigned int *road_lengths, road_link *road_links, unsigned int road_link_count, unsigned int max_speed)
 {
     unsigned int clearance = 0;
@@ -357,6 +431,12 @@ __device__ unsigned int cuda_get_clearance(signed int *cells, unsigned int index
     return UINT_MAX;
 }
 
+/**
+ * cuda_apply_rules()
+ *
+ * Applies the model's basic rules (acceleration, deceleration, randomisation, progress).
+ * New model generation saved in temp_cells.
+ */
 __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsigned int *road_lengths, unsigned int road_count, unsigned int max_speed, unsigned int *vehicle_counts, unsigned int random_seed, road_link *road_links, unsigned int road_link_count, signed int *follow_vehicle_road, signed int *follow_vehicle_cell)
 {
     unsigned int index = threadIdx.x + blockIdx.x * blockDim.x;
@@ -450,6 +530,12 @@ __global__ void cuda_apply_rules(signed int *cells, signed int *temp_cells, unsi
     }
 }
 
+/**
+ * cuda_process_model()
+ *
+ * Main function; coordinates all processing of the model.
+ * Returns the model's overall traffic density.
+ */
 extern "C"
 float cuda_process_model(signed int **cells, unsigned int *road_lengths, unsigned int generation, float desired_density, bool realistic_traffic_synthesis);
 

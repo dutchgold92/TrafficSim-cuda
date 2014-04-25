@@ -61,7 +61,6 @@ private:
     void identify_input_roads();
     signed int** init_empty_cells();
     void init_vehicles();
-    void process();
 };
 
 #endif // MODEL_H

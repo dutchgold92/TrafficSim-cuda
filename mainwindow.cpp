@@ -1,6 +1,10 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+/**
+* @brief MainWindow::MainWindow Initialises the MainWindow.
+* @param parent Unused parameter.
+*/
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -55,12 +59,18 @@ MainWindow::MainWindow(QWidget *parent) :
     this->model_updater->start();
 }
 
+/**
+* @brief MainWindow::~MainWindow Destroys the MainWindow.
+*/
 MainWindow::~MainWindow()
 {
     delete this->model;
     delete ui;
 }
 
+/**
+* @brief MainWindow::draw_model Draws the model road network unto the GUI.
+*/
 void MainWindow::draw_model()
 {
     this->scene->clear();
@@ -70,6 +80,13 @@ void MainWindow::draw_model()
     this->scene->setSceneRect(this->scene->itemsBoundingRect());
 }
 
+/**
+ * @brief MainWindow::draw_road Draws the specific road unto the GUI.
+ * @param road_index Index of road.
+ * @param process_forward Direction of processing.
+ * @param x Coordinate on the x-axis.
+ * @param y Coordinate on the y-axis.
+ */
 void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal x, qreal y)
 {
     qreal start_x = x;
@@ -208,6 +225,16 @@ void MainWindow::draw_road(unsigned int road_index, bool process_forward, qreal 
     }
 }
 
+/**
+ * @brief MainWindow::draw_cell Draws the specified cell unto the GUI.
+ * @param road_index Index of road.
+ * @param cell_index Index of cell.
+ * @param x Coordinate on the x-axis.
+ * @param y Coordinate on the y-axis.
+ * @param cell_width Width of cell to be drawn.
+ * @param cell_height Height of cell to be drawn.
+ * @param direction Orientation of drawn cell.
+ */
 void MainWindow::draw_cell(unsigned int road_index, unsigned int cell_index, qreal x, qreal y, qreal cell_width, qreal cell_height, Model::Direction direction)
 {
     bool is_empty = (this->model->get_cells()[road_index][cell_index] < 0);
@@ -221,6 +248,9 @@ void MainWindow::draw_cell(unsigned int road_index, unsigned int cell_index, qre
         this->draw_directional_arrow(x, y, direction);
 }
 
+/**
+ * @brief MainWindow::on_playPauseButton_pressed Reacts to Play/Pause actions from the user.
+ */
 void MainWindow::on_playPauseButton_pressed()
 {
     if(this->updating)
@@ -239,22 +269,37 @@ void MainWindow::on_playPauseButton_pressed()
     this->updating = !this->updating;
 }
 
+/**
+ * @brief MainWindow::on_stepButton_pressed Evolves the model for a single generation.
+ */
 void MainWindow::on_stepButton_pressed()
 {
     this->model->update();
     emit(model_updated());
 }
 
+/**
+ * @brief MainWindow::on_displayScaleInput_valueChanged Scales the display by input value.
+ */
 void MainWindow::on_displayScaleInput_valueChanged(int value)
 {
     this->cell_size = value;
 }
 
+/**
+ * @brief MainWindow::on_showRoadDirectionsInput_toggled Sets this->show_road_directions according to input value.
+ */
 void MainWindow::on_showRoadDirectionsInput_toggled(bool checked)
 {
     this->show_road_directions = checked;
 }
 
+/**
+ * @brief MainWindow::draw_directional_arrow Draws a directional arrow next to a road on the GUI.
+ * @param x Coordinate on the x-axis.
+ * @param y Coordinate on the y-axis.
+ * @param direction Direction of arrow to be drawn.
+ */
 void MainWindow::draw_directional_arrow(qreal x, qreal y, Model::Direction direction)
 {
     qreal arrow_x = x;
@@ -289,6 +334,9 @@ void MainWindow::draw_directional_arrow(qreal x, qreal y, Model::Direction direc
     scene->addItem(arrow);
 }
 
+/**
+ * @brief MainWindow::on_updateIntervalInput_valueChanged Reacts to user input by changing the usleep interval.
+ */
 void MainWindow::on_updateIntervalInput_valueChanged(int value)
 {
     QString string;
@@ -299,6 +347,9 @@ void MainWindow::on_updateIntervalInput_valueChanged(int value)
     this->model_updater->set_usleep_interval((float)ui->updateIntervalInput->value() / 100);
 }
 
+/**
+ * @brief MainWindow::on_densityInput_valueChanged Reacts to user input by changing the desired traffic density.
+ */
 void MainWindow::on_densityInput_valueChanged(int value)
 {
     QString string;
@@ -309,6 +360,9 @@ void MainWindow::on_densityInput_valueChanged(int value)
     this->model->set_desired_density(((float)ui->densityInput->value()) / 100);
 }
 
+/**
+ * @brief MainWindow::scene_selection Reacts to user selection, enabling/disabling vehicle tracking.
+ */
 void MainWindow::scene_selection()
 {
     if(this->scene->selectedItems().isEmpty())
@@ -321,6 +375,10 @@ void MainWindow::scene_selection()
     }
 }
 
+/**
+ * @brief MainWindow::on_realisticTrafficSynthesisInput_toggled Sets the traffic synthesis
+ * method according to user selection.
+ */
 void MainWindow::on_realisticTrafficSynthesisInput_toggled(bool checked)
 {
     this->model->set_realistic_traffic_synthesis(checked);

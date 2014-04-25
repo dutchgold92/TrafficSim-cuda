@@ -1,11 +1,17 @@
 #include "model.h"
 
+/**
+ * @brief Model::Model Initialises the Model.
+ */
 Model::Model()
 {
     srand(time(NULL));
     this->init();
 }
 
+/**
+ * @brief Model::~Model Destroys the Model.
+ */
 Model::~Model()
 {
     cuda_deinit();
@@ -16,21 +22,33 @@ Model::~Model()
     delete[] this->input_roads;
 }
 
+/**
+ * @brief Model::get_cells Returns a pointer to the model's cells array.
+ */
 signed int** Model::get_cells()
 {
     return this->cells;
 }
 
+/**
+ * @brief Model::get_road_count Returns the number of roads.
+ */
 unsigned int Model::get_road_count()
 {
     return this->road_count;
 }
 
+/**
+ * @brief Model::get_road_lengths Returns a pointer to an array specifying road lengths.
+ */
 unsigned int* Model::get_road_lengths()
 {
     return this->road_lengths;
 }
 
+/**
+ * @brief Model::init Coordinates full initialisation of the model.
+ */
 void Model::init()
 {
     this->generation = 0;
@@ -53,6 +71,9 @@ void Model::init()
     cuda_init(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_links, this->road_link_count, this->input_roads, this->input_road_count);
 }
 
+/**
+ * @brief Model::init_roads Initialises the model's roads.
+ */
 void Model::init_roads()
 {
     this->road_lengths[0] = 25;
@@ -83,6 +104,9 @@ void Model::init_roads()
     this->cells = this->init_empty_cells();
 }
 
+/**
+ * @brief Model::init_road_links Initialises the model's road links.
+ */
 void Model::init_road_links()
 {
     road_link r0;
@@ -164,6 +188,9 @@ void Model::init_road_links()
     }
 }
 
+/**
+ * @brief Model::identify_input_roads Detects input_roads in the topology and stores in this->input_roads[].
+ */
 void Model::identify_input_roads()
 {
     this->input_road_count = 0;
@@ -221,6 +248,10 @@ void Model::identify_input_roads()
     }
 }
 
+/**
+ * @brief Model::init_empty_cells Initialises a new, empty cells array.
+ * @return
+ */
 signed int** Model::init_empty_cells()
 {
     signed int** cells = new signed int*[this->road_count];
@@ -236,6 +267,9 @@ signed int** Model::init_empty_cells()
     return cells;
 }
 
+/**
+ * @brief Model::init_vehicles Initialises vehicles in the model, until DEFAULT_DESIRED_DENSITY is reached.
+ */
 void Model::init_vehicles()
 {  
     float required_density = DEFAULT_DESIRED_DENSITY;
@@ -258,12 +292,18 @@ void Model::init_vehicles()
     }
 }
 
+/**
+ * @brief Model::update Invokes an evolution of the model.
+ */
 void Model::update()
 {
-    this->process();
+    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->generation, this->desired_density, this->realistic_traffic_synthesis);
     this->generation++;
 }
 
+/**
+ * @brief Model::display Illogically prints the model to standard output.
+ */
 void Model::display()
 {
     for(unsigned int x = 0; x < this->road_count; x++)
@@ -282,41 +322,57 @@ void Model::display()
     cout << endl;
 }
 
-void Model::process()
-{
-    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->generation, this->desired_density, this->realistic_traffic_synthesis);
-}
-
+/**
+ * @brief Model::get_model_density Returns this->model_density.
+ */
 float Model::get_model_density()
 {
     return this->model_density;
 }
 
+/**
+ * @brief Model::get_generation Returns this->generation.
+ */
 unsigned long Model::get_generation()
 {
     return this->generation;
 }
 
+/**
+ * @brief Model::get_road_links Returns this->road_links.
+ */
 road_link *Model::get_road_links()
 {
     return this->road_links;
 }
 
+/**
+ * @brief Model::get_road_link_count Returns this->road_link_count.
+ */
 unsigned int Model::get_road_link_count()
 {
     return this->road_link_count;
 }
 
+/**
+ * @brief Model::get_road_directions Returns this->road_directions.
+ */
 Model::Direction *Model::get_road_directions()
 {
     return this->road_directions;
 }
 
+/**
+ * @brief Model::set_desired_density Sets this->desired density as per input.
+ */
 void Model::set_desired_density(float desired_density)
 {
     this->desired_density = desired_density;
 }
 
+/**
+ * @brief Model::set_realistic_traffic_synthesis Toggles this->realistic_traffic_synthesis as per input.
+ */
 void Model::set_realistic_traffic_synthesis(bool realistic_traffic_synthesis)
 {
     this->realistic_traffic_synthesis = realistic_traffic_synthesis;

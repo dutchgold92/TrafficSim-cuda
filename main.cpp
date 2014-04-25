@@ -3,7 +3,10 @@
 #include <QElapsedTimer>
 #include "model.h"
 
-void benchmark()
+/**
+ * @brief benchmark Times initialisation and processing of the model over the specified number of generations.
+ */
+void benchmark(unsigned int generations)
 {
     Model *m = new Model();
 
@@ -11,7 +14,7 @@ void benchmark()
     qint64 m_seconds;
     timer.start();
 
-    for(int i = 0; i < 100; i++)
+    for(int i = 0; i < generations; i++)
     {
         m->update();
     }
@@ -21,9 +24,14 @@ void benchmark()
     cout << "finished after: " << m_seconds << "ms" << endl;
 }
 
+/**
+* @brief main Launches the application.
+* @param argc Unused parameter.
+* @param argv Unused parameter.
+*/
 int main(int argc, char *argv[])
 {
-//     benchmark();
+//     benchmark(100);
 //     return 0;
 
     QApplication a(argc, argv);

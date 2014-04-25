@@ -1,5 +1,10 @@
 #include "modelupdater.h"
 
+/**
+* @brief ModelUpdater::ModelUpdater Initialises the ModelUpdater object.
+* @param parent Parent object - MainWindow expected.
+* @param model Model object to manipulate.
+*/
 ModelUpdater::ModelUpdater(QObject *parent, Model *model) : QThread(parent)
 {
     this->usleep_interval = DEFAULT_USLEEP_INTERVAL;
@@ -8,6 +13,9 @@ ModelUpdater::ModelUpdater(QObject *parent, Model *model) : QThread(parent)
     connect(this, SIGNAL(model_updated()), parent, SLOT(draw_model()), Qt::QueuedConnection);
 }
 
+/**
+* @brief ModelUpdater::run Starts the update thread.
+*/
 void ModelUpdater::run()
 {
     for(;;)
@@ -23,11 +31,17 @@ void ModelUpdater::run()
     this->stopped = false;
 }
 
+/**
+* @brief ModelUpdater::set_update_interval Changes the object's defined update interval.
+*/
 void ModelUpdater::set_usleep_interval(float usleep_interval)
 {
     this->usleep_interval = usleep_interval;
 }
 
+/**
+* @brief ModelUpdater::stop Stops the thread.
+*/
 void ModelUpdater::stop()
 {
     this->stopped = true;
