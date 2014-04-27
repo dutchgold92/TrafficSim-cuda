@@ -44,7 +44,7 @@ private:
     signed int follow_vehicle_road;
     signed int follow_vehicle_cell;
     QCustomPlot *plot_widget;
-    enum Plot_Type {input_density, overall_density_vs_input_density};
+    enum Plot_Type {input_density, overall_density_vs_input_density, traffic_throughput};
     Plot_Type plot_type;
     signed int plot_time_steps;
     QVector<double> plot_data_x;
@@ -69,6 +69,7 @@ private slots:
     void on_actionPlotInputDensity_triggered();
     void on_actionPlotInputAndOverallDensity_triggered();
     void resizeEvent(QResizeEvent *);
+    void on_actionPlotTrafficThroughput_triggered();
 signals:
     void model_updated();
 };

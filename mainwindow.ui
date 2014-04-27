@@ -260,6 +260,11 @@
     <string>Plot Incoming/Overall Traffic Density</string>
    </property>
   </action>
+  <action name="actionPlotTrafficThroughput">
+   <property name="text">
+    <string>Plot Traffic Throughput</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

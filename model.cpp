@@ -52,11 +52,13 @@ unsigned int* Model::get_road_lengths()
 void Model::init()
 {
     this->generation = 0;
-    this->road_count = 12;
+//    this->road_count = 12;
+    this->road_count = 11;
     this->road_directions = new Direction[this->road_count];
     this->road_lengths = new unsigned int[this->road_count];
     this->vehicle_speed_limit = DEFAULT_VEHICLE_SPEED_LIMIT;
     this->desired_density = DEFAULT_DESIRED_DENSITY;
+    this->vehicles_out_last_generation = 0;
     this->init_roads();
     this->max_road_length = 0;
     this->realistic_traffic_synthesis = true;
@@ -67,8 +69,9 @@ void Model::init()
 
     this->init_road_links();
     this->identify_input_roads();
+    this->identify_output_roads();
     this->init_vehicles();
-    cuda_init(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_links, this->road_link_count, this->input_roads, this->input_road_count);
+    cuda_init(this->cells, this->road_lengths, this->max_road_length, this->road_count, this->vehicle_speed_limit, this->road_links, this->road_link_count, this->input_roads, this->input_road_count, this->output_roads, this->output_road_count);
 }
 
 /**
@@ -76,30 +79,53 @@ void Model::init()
  */
 void Model::init_roads()
 {
+//    this->road_lengths[0] = 25;
+//    this->road_directions[0] = this->Right;
+//    this->road_lengths[1] = 25;
+//    this->road_directions[1] = this->Up;
+//    this->road_lengths[2] = 25;
+//    this->road_directions[2] = this->Right;
+//    this->road_lengths[3] = 25;
+//    this->road_directions[3] = this->Down;
+//    this->road_lengths[4] = 5;
+//    this->road_directions[4] = this->Up;
+//    this->road_lengths[5] = 25;
+//    this->road_directions[5] = this->Right;
+//    this->road_lengths[6] = 25;
+//    this->road_directions[6] = this->Right;
+//    this->road_lengths[7] = 5;
+//    this->road_directions[7] = this->Down;
+//    this->road_lengths[8] = 25;
+//    this->road_directions[8] = this->Right;
+//    this->road_lengths[9] = 25;
+//    this->road_directions[9] = this->Down;
+//    this->road_lengths[10] = 25;
+//    this->road_directions[10] = this->Left;
+//    this->road_lengths[11] = 10;
+//    this->road_directions[11] = this->Down;
+
     this->road_lengths[0] = 25;
     this->road_directions[0] = this->Right;
-    this->road_lengths[1] = 25;
+    this->road_lengths[1] = 2;
     this->road_directions[1] = this->Up;
-    this->road_lengths[2] = 25;
-    this->road_directions[2] = this->Right;
+    this->road_lengths[2] = 2;
+    this->road_directions[2] = this->Down;
     this->road_lengths[3] = 25;
-    this->road_directions[3] = this->Down;
-    this->road_lengths[4] = 5;
-    this->road_directions[4] = this->Up;
+    this->road_directions[3] = this->Right;
+    this->road_lengths[4] = 25;
+    this->road_directions[4] = this->Right;
     this->road_lengths[5] = 25;
     this->road_directions[5] = this->Right;
     this->road_lengths[6] = 25;
     this->road_directions[6] = this->Right;
-    this->road_lengths[7] = 5;
+    this->road_lengths[7] = 2;
     this->road_directions[7] = this->Down;
-    this->road_lengths[8] = 25;
-    this->road_directions[8] = this->Right;
+    this->road_lengths[8] = 2;
+    this->road_directions[8] = this->Up;
     this->road_lengths[9] = 25;
-    this->road_directions[9] = this->Down;
-    this->road_lengths[10] = 25;
-    this->road_directions[10] = this->Left;
-    this->road_lengths[11] = 10;
-    this->road_directions[11] = this->Down;
+    this->road_directions[9] = this->Right;
+    this->road_lengths[10] = 5;
+    this->road_directions[10] = this->Down;
 
     this->cells = this->init_empty_cells();
 }
@@ -109,56 +135,118 @@ void Model::init_roads()
  */
 void Model::init_road_links()
 {
+//    road_link r0;
+//    r0.origin_road_count = 2;
+//    r0.destination_road_count = 1;
+//    r0.origin_roads[0] = 0;
+//    r0.origin_roads[1] = 1;
+//    r0.destination_roads[0] = 2;
+
+//    road_link r1;
+//    r1.origin_road_count = 1;
+//    r1.destination_road_count = 3;
+//    r1.origin_roads[0] = 2;
+//    r1.destination_roads[0] = 3;
+//    r1.destination_roads[1] = 4;
+//    r1.destination_roads[2] = 5;
+
+
+//    road_link r2;
+//    r2.origin_road_count = 1;
+//    r2.destination_road_count = 1;
+//    r2.origin_roads[0] = 4;
+//    r2.destination_roads[0] = 6;
+
+//    road_link r3;
+//    r3.origin_road_count = 1;
+//    r3.destination_road_count = 1;
+//    r3.origin_roads[0] = 6;
+//    r3.destination_roads[0] = 7;
+
+//    road_link r4;
+//    r4.origin_road_count = 2;
+//    r4.destination_road_count = 2;
+//    r4.origin_roads[0] = 5;
+//    r4.origin_roads[1] = 7;
+//    r4.destination_roads[0] = 8;
+//    r4.destination_roads[1] = 9;
+
+//    road_link r5;
+//    r5.origin_road_count = 1;
+//    r5.destination_road_count = 1;
+//    r5.origin_roads[0] = 9;
+//    r5.destination_roads[0] = 10;
+
+//    road_link r6;
+//    r6.origin_road_count = 2;
+//    r6.destination_road_count = 1;
+//    r6.origin_roads[0] = 3;
+//    r6.origin_roads[1] = 10;
+//    r6.destination_roads[0] = 11;
+
+//    this->road_link_count = 7;
+//    this->road_links = new road_link[this->road_link_count];
+//    this->road_links[0] = r0;
+//    this->road_links[1] = r1;
+//    this->road_links[2] = r2;
+//    this->road_links[3] = r3;
+//    this->road_links[4] = r4;
+//    this->road_links[5] = r5;
+//    this->road_links[6] = r6;
+
     road_link r0;
-    r0.origin_road_count = 2;
-    r0.destination_road_count = 1;
+    r0.origin_road_count = 1;
+    r0.destination_road_count = 2;
     r0.origin_roads[0] = 0;
-    r0.origin_roads[1] = 1;
-    r0.destination_roads[0] = 2;
+    r0.destination_roads[0] = 1;
+    r0.destination_roads[1] = 2;
 
     road_link r1;
     r1.origin_road_count = 1;
-    r1.destination_road_count = 3;
-    r1.origin_roads[0] = 2;
+    r1.destination_road_count = 1;
+    r1.origin_roads[0] = 1;
     r1.destination_roads[0] = 3;
-    r1.destination_roads[1] = 4;
-    r1.destination_roads[2] = 5;
-
 
     road_link r2;
     r2.origin_road_count = 1;
     r2.destination_road_count = 1;
-    r2.origin_roads[0] = 4;
-    r2.destination_roads[0] = 6;
+    r2.origin_roads[0] = 2;
+    r2.destination_roads[0] = 5;
 
     road_link r3;
     r3.origin_road_count = 1;
-    r3.destination_road_count = 1;
-    r3.origin_roads[0] = 6;
-    r3.destination_roads[0] = 7;
+    r3.destination_road_count = 2;
+    r3.origin_roads[0] = 3;
+    r3.destination_roads[0] = 4;
+    r3.destination_roads[1] = 10;
 
     road_link r4;
     r4.origin_road_count = 2;
-    r4.destination_road_count = 2;
-    r4.origin_roads[0] = 5;
-    r4.origin_roads[1] = 7;
-    r4.destination_roads[0] = 8;
-    r4.destination_roads[1] = 9;
+    r4.destination_road_count = 1;
+    r4.origin_roads[0] = 10;
+    r4.origin_roads[1] = 5;
+    r4.destination_roads[0] = 6;
 
     road_link r5;
     r5.origin_road_count = 1;
     r5.destination_road_count = 1;
-    r5.origin_roads[0] = 9;
-    r5.destination_roads[0] = 10;
+    r5.origin_roads[0] = 4;
+    r5.destination_roads[0] = 7;
 
     road_link r6;
-    r6.origin_road_count = 2;
+    r6.origin_road_count = 1;
     r6.destination_road_count = 1;
-    r6.origin_roads[0] = 3;
-    r6.origin_roads[1] = 10;
-    r6.destination_roads[0] = 11;
+    r6.origin_roads[0] = 6;
+    r6.destination_roads[0] = 8;
 
-    this->road_link_count = 7;
+    road_link r7;
+    r7.origin_road_count = 2;
+    r7.destination_road_count = 1;
+    r7.origin_roads[0] = 7;
+    r7.origin_roads[1] = 8;
+    r7.destination_roads[0] = 9;
+
+    this->road_link_count = 8;
     this->road_links = new road_link[this->road_link_count];
     this->road_links[0] = r0;
     this->road_links[1] = r1;
@@ -167,6 +255,7 @@ void Model::init_road_links()
     this->road_links[4] = r4;
     this->road_links[5] = r5;
     this->road_links[6] = r6;
+    this->road_links[7] = r7;
 
     for(unsigned int x = 0; x < this->road_link_count; x++) // activate/deactivate road links
     {
@@ -249,6 +338,66 @@ void Model::identify_input_roads()
 }
 
 /**
+ * @brief Model::identify_output_roads Counts the number of output roads in the model.
+ */
+void Model::identify_output_roads()
+{
+    this->output_road_count = 0;
+
+    for(unsigned int i = 0; i < this->road_count; i++)
+    {
+        bool found = false;
+
+        for(unsigned int x = 0; x < this->road_link_count; x++)
+        {
+            for(unsigned int y = 0; y < this->road_links[x].origin_road_count; y++)
+            {
+                if(this->road_links[x].origin_roads[y] == i)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if(found)
+               break;
+        }
+
+        if(!found)
+            this->output_road_count++;
+    }
+
+    this->output_roads = new unsigned int[this->output_road_count];
+    unsigned int found_count = 0;
+
+    for(unsigned int i = 0; i < this->road_count; i++)
+    {
+        bool found = false;
+
+        for(unsigned int x = 0; x < this->road_link_count; x++)
+        {
+            for(unsigned int y = 0; y < this->road_links[x].origin_road_count; y++)
+            {
+                if(this->road_links[x].origin_roads[y] == i)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if(found)
+               break;
+        }
+
+        if(!found)
+        {
+            this->output_roads[found_count] = i;
+            found_count++;
+        }
+    }
+}
+
+/**
  * @brief Model::init_empty_cells Initialises a new, empty cells array.
  * @return
  */
@@ -297,7 +446,7 @@ void Model::init_vehicles()
  */
 void Model::update()
 {
-    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->generation, this->desired_density, this->realistic_traffic_synthesis);
+    this->model_density = cuda_process_model(this->cells, this->road_lengths, this->generation, this->desired_density, this->realistic_traffic_synthesis, &this->vehicles_out_last_generation);
     this->generation++;
 }
 
@@ -396,4 +545,20 @@ void Model::set_desired_density(float desired_density)
 void Model::set_realistic_traffic_synthesis(bool realistic_traffic_synthesis)
 {
     this->realistic_traffic_synthesis = realistic_traffic_synthesis;
+}
+
+/**
+ * @brief Model::get_output_road_count Returns this->output_road_count.
+ */
+unsigned int Model::get_output_road_count()
+{
+    return this->output_road_count;
+}
+
+/**
+ * @brief Model::get_vehicles_out_last_generation Returns this->vehicles_out_last_generation.
+ */
+unsigned int Model::get_vehicles_out_last_generation()
+{
+    return this->vehicles_out_last_generation;
 }

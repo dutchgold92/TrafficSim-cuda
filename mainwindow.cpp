@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->scene->setBackgroundBrush(QBrush(Qt::black));
     ui->gfx->addAction(ui->actionPlotInputDensity);
     ui->gfx->addAction(ui->actionPlotInputAndOverallDensity);
+    ui->gfx->addAction(ui->actionPlotTrafficThroughput);
     ui->gfx->setScene(this->scene);
     ui->gfx->show();
     this->follow_vehicle_road = -1;
@@ -39,6 +40,7 @@ MainWindow::MainWindow(QWidget *parent) :
     densityValueString.append(QString::number(DEFAULT_INITIAL_DENSITY));
     densityValueString.append(")");
     ui->densityInputValueLabel->setText(densityValueString);
+    ui->densityInput->setValue(DEFAULT_DESIRED_DENSITY * 100);
 
     switch(this->model->get_road_directions()[0])
     {
@@ -412,6 +414,11 @@ void MainWindow::plot()
                 this->plot_widget->graph(1)->setData(this->plot_data_x, this->plot_data_y2);
                 this->plot_widget->graph(1)->setPen(QPen(Qt::red));
                 break;
+            case traffic_throughput:
+                this->plot_data_y.pop_front();
+                this->plot_data_y.push_back(this->model->get_vehicles_out_last_generation());
+            this->plot_widget->graph(0)->setData(this->plot_data_x, this->plot_data_y);
+                break;
         }
 
         this->plot_widget->replot();
@@ -425,7 +432,7 @@ void MainWindow::plot()
 void MainWindow::on_actionPlotInputDensity_triggered()
 {
     if(this->plot_widget != 0)
-        return;
+        this->on_closePlotButton_pressed();
 
     this->plot_type = input_density;
     ui->plotLayout->removeWidget(this->plot_widget);
@@ -459,7 +466,7 @@ void MainWindow::on_actionPlotInputDensity_triggered()
 void MainWindow::on_actionPlotInputAndOverallDensity_triggered()
 {
     if(this->plot_widget != 0)
-        return;
+        this->on_closePlotButton_pressed();
 
     this->plot_type = overall_density_vs_input_density;
     ui->plotLayout->removeWidget(this->plot_widget);
@@ -511,4 +518,34 @@ void MainWindow::resizeEvent(QResizeEvent *)
         this->plot_widget->setMinimumWidth(this->frameSize().width() / 2);
         this->plot_widget->setMinimumHeight(this->frameSize().height() / 2);
     }
+}
+
+void MainWindow::on_actionPlotTrafficThroughput_triggered()
+{
+    if(this->plot_widget != 0)
+        this->on_closePlotButton_pressed();
+
+    this->plot_type = traffic_throughput;
+    ui->plotLayout->removeWidget(this->plot_widget);
+    ui->plotLayout->addWidget(this->plot_widget = new QCustomPlot(this->plot_widget));
+    this->plot_widget->xAxis->setLabel("Time Steps");
+    this->plot_widget->xAxis->setRange(-10, 0);
+    this->plot_widget->yAxis->setLabel("Traffic Throughput (Vehicles)");
+    this->plot_widget->yAxis->setRange(0, (this->model->get_output_road_count() * 2));
+    this->plot_widget->setMinimumWidth(this->frameSize().width() / 2);
+    this->plot_widget->setMinimumHeight(this->frameSize().height() / 2);
+    this->plot_data_x.clear();
+    this->plot_data_y.clear();
+    this->plot_data_y2.clear();
+
+    for(signed int i = 0; i < this->plot_time_steps; i++)
+    {
+        this->plot_data_x.push_back(i - this->plot_time_steps);
+        this->plot_data_y.push_back(0);
+    }
+
+    this->plot_widget->addGraph();
+    this->plot();
+    this->plot_widget->show();
+    ui->closePlotButton->show();
 }
