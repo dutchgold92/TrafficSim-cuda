@@ -323,6 +323,26 @@ void Model::display()
 }
 
 /**
+ * @brief Model::get_input_density Returns density of model's input roads.
+ */
+float Model::get_input_density()
+{
+    unsigned int cells = 0;
+    unsigned int vehicles = 0;
+
+    for(int x = 0; x < this->input_road_count; x++)
+    {
+        cells += this->road_lengths[this->input_roads[x]];
+
+        for(int y = 0; y < this->road_lengths[this->input_roads[x]]; y++)
+            if(this->cells[this->input_roads[x]][y] >= 0)
+                vehicles++;
+    }
+
+    return((float)vehicles / (float)cells);
+}
+
+/**
  * @brief Model::get_model_density Returns this->model_density.
  */
 float Model::get_model_density()

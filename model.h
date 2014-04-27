@@ -34,6 +34,7 @@ public:
     unsigned int get_road_count();
     unsigned int* get_road_lengths();
     float get_model_density();
+    float get_input_density();
     void update();
     void display();
     unsigned long get_generation();

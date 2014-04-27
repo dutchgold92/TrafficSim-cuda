@@ -11,6 +11,7 @@ ModelUpdater::ModelUpdater(QObject *parent, Model *model) : QThread(parent)
     this->model = model;
     this->stopped = false;
     connect(this, SIGNAL(model_updated()), parent, SLOT(draw_model()), Qt::QueuedConnection);
+    connect(this, SIGNAL(model_updated()), parent, SLOT(plot()), Qt::QueuedConnection);
 }
 
 /**

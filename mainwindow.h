@@ -3,6 +3,7 @@
 
 #define DEFAULT_INITIAL_DENSITY 0.4
 #define DEFAULT_CELL_SIZE 10
+#define DEFAULT_PLOT_TIME_STEPS 50
 
 #include <QMainWindow>
 #include <model.h>
@@ -10,6 +11,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsRectItem>
 #include <graphicscellitem.h>
+#include <qcustomplot.h>
 
 extern "C"
 void cuda_set_follow_vehicle(unsigned int road, unsigned int cell);
@@ -41,12 +43,20 @@ private:
     bool show_road_directions;
     signed int follow_vehicle_road;
     signed int follow_vehicle_cell;
+    QCustomPlot *plot_widget;
+    enum Plot_Type {input_density, overall_density_vs_input_density};
+    Plot_Type plot_type;
+    signed int plot_time_steps;
+    QVector<double> plot_data_x;
+    QVector<double> plot_data_y;
+    QVector<double> plot_data_y2;
     void draw_road(unsigned int road_index, bool process_forward, qreal x, qreal y);
     void draw_directional_arrow(qreal x, qreal y, Model::Direction direction);
     void draw_cell(unsigned int road_index, unsigned int cell_index, qreal x, qreal y, qreal cell_width, qreal cell_height, Model::Direction direction);
 public slots:
     void draw_model();
 private slots:
+    void on_closePlotButton_pressed();
     void on_playPauseButton_pressed();
     void on_stepButton_pressed();
     void on_displayScaleInput_valueChanged(int value);
@@ -55,6 +65,10 @@ private slots:
     void on_densityInput_valueChanged(int value);
     void scene_selection();
     void on_realisticTrafficSynthesisInput_toggled(bool checked);
+    void plot();
+    void on_actionPlotInputDensity_triggered();
+    void on_actionPlotInputAndOverallDensity_triggered();
+    void resizeEvent(QResizeEvent *);
 signals:
     void model_updated();
 };

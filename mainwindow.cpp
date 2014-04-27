@@ -18,11 +18,15 @@ MainWindow::MainWindow(QWidget *parent) :
     memset(this->rendered_road_generations, 0, (this->model->get_road_count() * sizeof(long)));
     this->scene = new QGraphicsScene(0, 0, ui->gfx->frameSize().width(), ui->gfx->frameSize().height());
     this->scene->setBackgroundBrush(QBrush(Qt::black));
+    ui->gfx->addAction(ui->actionPlotInputDensity);
+    ui->gfx->addAction(ui->actionPlotInputAndOverallDensity);
     ui->gfx->setScene(this->scene);
     ui->gfx->show();
-    ui->closePlotButton->hide();
     this->follow_vehicle_road = -1;
     this->follow_vehicle_cell = -1;
+    this->plot_widget = 0;
+    this->plot_time_steps = DEFAULT_PLOT_TIME_STEPS;
+    ui->closePlotButton->hide();
 
     QString updateValueString;
     updateValueString.append("(");
@@ -53,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     connect(this, SIGNAL(model_updated()), this, SLOT(draw_model()), Qt::QueuedConnection);
+    connect(this, SIGNAL(model_updated()), this, SLOT(plot()), Qt::QueuedConnection);
     connect(this->scene, SIGNAL(selectionChanged()), this, SLOT(scene_selection()), Qt::QueuedConnection);
     this->draw_model();
     this->model_updater = new ModelUpdater(this, this->model);
@@ -382,4 +387,128 @@ void MainWindow::scene_selection()
 void MainWindow::on_realisticTrafficSynthesisInput_toggled(bool checked)
 {
     this->model->set_realistic_traffic_synthesis(checked);
+}
+
+/**
+* @brief MainWindow::plot Plots model data.
+*/
+void MainWindow::plot()
+{
+    if(this->plot_widget != 0)
+    {
+        switch(this->plot_type)
+        {
+            case input_density:
+                this->plot_data_y.pop_front();
+                this->plot_data_y.push_back(this->model->get_input_density());
+                this->plot_widget->graph(0)->setData(this->plot_data_x, this->plot_data_y);
+                break;
+            case overall_density_vs_input_density:
+                this->plot_data_y.pop_front();
+                this->plot_data_y2.pop_front();
+                this->plot_data_y.push_back(this->model->get_input_density());
+                this->plot_data_y2.push_back(this->model->get_model_density());
+                this->plot_widget->graph(0)->setData(this->plot_data_x, this->plot_data_y);
+                this->plot_widget->graph(1)->setData(this->plot_data_x, this->plot_data_y2);
+                this->plot_widget->graph(1)->setPen(QPen(Qt::red));
+                break;
+        }
+
+        this->plot_widget->replot();
+    }
+}
+
+/**
+* @brief MainWindow::on_actionPlotInputDensity_triggered Opens the plotting pane to plot input density,
+* based on user selection.
+*/
+void MainWindow::on_actionPlotInputDensity_triggered()
+{
+    if(this->plot_widget != 0)
+        return;
+
+    this->plot_type = input_density;
+    ui->plotLayout->removeWidget(this->plot_widget);
+    ui->plotLayout->addWidget(this->plot_widget = new QCustomPlot(this->plot_widget));
+    this->plot_widget->xAxis->setLabel("Time Steps");
+    this->plot_widget->xAxis->setRange(-this->plot_time_steps, 0);
+    this->plot_widget->yAxis->setLabel("Input Traffic Density");
+    this->plot_widget->yAxis->setRange(0, 1);
+    this->plot_widget->setMinimumWidth(this->frameSize().width() / 2);
+    this->plot_widget->setMinimumHeight(this->frameSize().height() / 2);
+    this->plot_data_x.clear();
+    this->plot_data_y.clear();
+    this->plot_data_y2.clear();
+
+    for(signed int i = 0; i < this->plot_time_steps; i++)
+    {
+        this->plot_data_x.push_back(i - this->plot_time_steps);
+        this->plot_data_y.push_back(0);
+    }
+
+    this->plot_widget->addGraph();
+    this->plot();
+    this->plot_widget->show();
+    ui->closePlotButton->show();
+}
+
+/**
+* @brief MainWindow::on_actionPlotInputAndOverallDensity_triggered Opens the plotting pane to plot input density
+* and overall density, based on user selection.
+*/
+void MainWindow::on_actionPlotInputAndOverallDensity_triggered()
+{
+    if(this->plot_widget != 0)
+        return;
+
+    this->plot_type = overall_density_vs_input_density;
+    ui->plotLayout->removeWidget(this->plot_widget);
+    ui->plotLayout->addWidget(this->plot_widget = new QCustomPlot(this->plot_widget));
+    this->plot_widget->xAxis->setLabel("Time Steps");
+    this->plot_widget->xAxis->setRange(-this->plot_time_steps, 0);
+    this->plot_widget->yAxis->setLabel("Input (blue)/Overall (red) Traffic Density");
+    this->plot_widget->yAxis->setRange(0, 1);
+    this->plot_widget->setMinimumWidth(this->frameSize().width() / 2);
+    this->plot_widget->setMinimumHeight(this->frameSize().height() / 2);
+    this->plot_data_x.clear();
+    this->plot_data_y.clear();
+    this->plot_data_y2.clear();
+
+    for(signed int i = 0; i < this->plot_time_steps; i++)
+    {
+        this->plot_data_x.push_back(i - this->plot_time_steps);
+        this->plot_data_y.push_back(0);
+        this->plot_data_y2.push_back(0);
+    }
+
+    this->plot_widget->addGraph();
+    this->plot_widget->addGraph();
+    this->plot();
+    this->plot_widget->show();
+    ui->closePlotButton->show();
+}
+
+/**
+* @brief MainWindow::on_closePlotButton_pressed Closes the plotting pane.
+*/
+void MainWindow::on_closePlotButton_pressed()
+{
+    this->plot_widget->hide();
+    this->plot_widget = 0;
+    this->plot_data_x.clear();
+    this->plot_data_y.clear();
+    this->plot_data_y2.clear();
+    ui->closePlotButton->hide();
+}
+
+/**
+* @brief MainWindow::resizeEvent Reacts to user resizing of the window.
+*/
+void MainWindow::resizeEvent(QResizeEvent *)
+{
+    if(this->plot_widget != 0 && !this->plot_widget->isHidden())
+    {
+        this->plot_widget->setMinimumWidth(this->frameSize().width() / 2);
+        this->plot_widget->setMinimumHeight(this->frameSize().height() / 2);
+    }
 }
