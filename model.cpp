@@ -52,8 +52,9 @@ unsigned int* Model::get_road_lengths()
 void Model::init()
 {
     this->generation = 0;
-//    this->road_count = 12;
-    this->road_count = 11;
+    this->road_count = 12;
+//    this->road_count = 8;
+//    this->road_count = 5;
     this->road_directions = new Direction[this->road_count];
     this->road_lengths = new unsigned int[this->road_count];
     this->vehicle_speed_limit = DEFAULT_VEHICLE_SPEED_LIMIT;
@@ -79,53 +80,60 @@ void Model::init()
  */
 void Model::init_roads()
 {
-//    this->road_lengths[0] = 25;
-//    this->road_directions[0] = this->Right;
-//    this->road_lengths[1] = 25;
-//    this->road_directions[1] = this->Up;
-//    this->road_lengths[2] = 25;
-//    this->road_directions[2] = this->Right;
-//    this->road_lengths[3] = 25;
-//    this->road_directions[3] = this->Down;
-//    this->road_lengths[4] = 5;
-//    this->road_directions[4] = this->Up;
-//    this->road_lengths[5] = 25;
-//    this->road_directions[5] = this->Right;
-//    this->road_lengths[6] = 25;
-//    this->road_directions[6] = this->Right;
-//    this->road_lengths[7] = 5;
-//    this->road_directions[7] = this->Down;
-//    this->road_lengths[8] = 25;
-//    this->road_directions[8] = this->Right;
-//    this->road_lengths[9] = 25;
-//    this->road_directions[9] = this->Down;
-//    this->road_lengths[10] = 25;
-//    this->road_directions[10] = this->Left;
-//    this->road_lengths[11] = 10;
-//    this->road_directions[11] = this->Down;
-
     this->road_lengths[0] = 25;
     this->road_directions[0] = this->Right;
-    this->road_lengths[1] = 2;
+    this->road_lengths[1] = 25;
     this->road_directions[1] = this->Up;
-    this->road_lengths[2] = 2;
-    this->road_directions[2] = this->Down;
+    this->road_lengths[2] = 25;
+    this->road_directions[2] = this->Right;
     this->road_lengths[3] = 25;
-    this->road_directions[3] = this->Right;
-    this->road_lengths[4] = 25;
-    this->road_directions[4] = this->Right;
+    this->road_directions[3] = this->Down;
+    this->road_lengths[4] = 5;
+    this->road_directions[4] = this->Up;
     this->road_lengths[5] = 25;
     this->road_directions[5] = this->Right;
     this->road_lengths[6] = 25;
     this->road_directions[6] = this->Right;
-    this->road_lengths[7] = 2;
+    this->road_lengths[7] = 5;
     this->road_directions[7] = this->Down;
-    this->road_lengths[8] = 2;
-    this->road_directions[8] = this->Up;
+    this->road_lengths[8] = 25;
+    this->road_directions[8] = this->Right;
     this->road_lengths[9] = 25;
-    this->road_directions[9] = this->Right;
-    this->road_lengths[10] = 5;
-    this->road_directions[10] = this->Down;
+    this->road_directions[9] = this->Down;
+    this->road_lengths[10] = 25;
+    this->road_directions[10] = this->Left;
+    this->road_lengths[11] = 10;
+    this->road_directions[11] = this->Down;
+
+// braess test 1
+//    this->road_lengths[0] = 50;
+//    this->road_directions[0] = this->Right;
+//    this->road_lengths[1] = 50;
+//    this->road_directions[1] = this->Right;
+//    this->road_lengths[2] = 9;
+//    this->road_directions[2] = this->Down;
+//    this->road_lengths[3] = 25;
+//    this->road_directions[3] = this->Right;
+//    this->road_lengths[4] = 25;
+//    this->road_directions[4] = this->Right;
+//    this->road_lengths[5] = 4;
+//    this->road_directions[5] = this->Down;
+//    this->road_lengths[6] = 4;
+//    this->road_directions[6] = this->Up;
+//    this->road_lengths[7] = 25;
+//    this->road_directions[7] = this->Right;
+
+    // braess test 2
+//    this->road_lengths[0] = 75;
+//    this->road_directions[0] = this->Right;
+//    this->road_lengths[1] = 75;
+//    this->road_directions[1] = this->Right;
+//    this->road_lengths[2] = 4;
+//    this->road_directions[2] = this->Down;
+//    this->road_lengths[3] = 4;
+//    this->road_directions[3] = this->Up;
+//    this->road_lengths[4] = 25;
+//    this->road_directions[4] = this->Right;
 
     this->cells = this->init_empty_cells();
 }
@@ -135,118 +143,56 @@ void Model::init_roads()
  */
 void Model::init_road_links()
 {
-//    road_link r0;
-//    r0.origin_road_count = 2;
-//    r0.destination_road_count = 1;
-//    r0.origin_roads[0] = 0;
-//    r0.origin_roads[1] = 1;
-//    r0.destination_roads[0] = 2;
-
-//    road_link r1;
-//    r1.origin_road_count = 1;
-//    r1.destination_road_count = 3;
-//    r1.origin_roads[0] = 2;
-//    r1.destination_roads[0] = 3;
-//    r1.destination_roads[1] = 4;
-//    r1.destination_roads[2] = 5;
-
-
-//    road_link r2;
-//    r2.origin_road_count = 1;
-//    r2.destination_road_count = 1;
-//    r2.origin_roads[0] = 4;
-//    r2.destination_roads[0] = 6;
-
-//    road_link r3;
-//    r3.origin_road_count = 1;
-//    r3.destination_road_count = 1;
-//    r3.origin_roads[0] = 6;
-//    r3.destination_roads[0] = 7;
-
-//    road_link r4;
-//    r4.origin_road_count = 2;
-//    r4.destination_road_count = 2;
-//    r4.origin_roads[0] = 5;
-//    r4.origin_roads[1] = 7;
-//    r4.destination_roads[0] = 8;
-//    r4.destination_roads[1] = 9;
-
-//    road_link r5;
-//    r5.origin_road_count = 1;
-//    r5.destination_road_count = 1;
-//    r5.origin_roads[0] = 9;
-//    r5.destination_roads[0] = 10;
-
-//    road_link r6;
-//    r6.origin_road_count = 2;
-//    r6.destination_road_count = 1;
-//    r6.origin_roads[0] = 3;
-//    r6.origin_roads[1] = 10;
-//    r6.destination_roads[0] = 11;
-
-//    this->road_link_count = 7;
-//    this->road_links = new road_link[this->road_link_count];
-//    this->road_links[0] = r0;
-//    this->road_links[1] = r1;
-//    this->road_links[2] = r2;
-//    this->road_links[3] = r3;
-//    this->road_links[4] = r4;
-//    this->road_links[5] = r5;
-//    this->road_links[6] = r6;
-
     road_link r0;
-    r0.origin_road_count = 1;
-    r0.destination_road_count = 2;
+    r0.origin_road_count = 2;
+    r0.destination_road_count = 1;
     r0.origin_roads[0] = 0;
-    r0.destination_roads[0] = 1;
-    r0.destination_roads[1] = 2;
+    r0.origin_roads[1] = 1;
+    r0.destination_roads[0] = 2;
 
     road_link r1;
     r1.origin_road_count = 1;
-    r1.destination_road_count = 1;
-    r1.origin_roads[0] = 1;
+    r1.destination_road_count = 3;
+    r1.origin_roads[0] = 2;
     r1.destination_roads[0] = 3;
+    r1.destination_roads[1] = 4;
+    r1.destination_roads[2] = 5;
+
 
     road_link r2;
     r2.origin_road_count = 1;
     r2.destination_road_count = 1;
-    r2.origin_roads[0] = 2;
-    r2.destination_roads[0] = 5;
+    r2.origin_roads[0] = 4;
+    r2.destination_roads[0] = 6;
 
     road_link r3;
     r3.origin_road_count = 1;
-    r3.destination_road_count = 2;
-    r3.origin_roads[0] = 3;
-    r3.destination_roads[0] = 4;
-    r3.destination_roads[1] = 10;
+    r3.destination_road_count = 1;
+    r3.origin_roads[0] = 6;
+    r3.destination_roads[0] = 7;
 
     road_link r4;
     r4.origin_road_count = 2;
-    r4.destination_road_count = 1;
-    r4.origin_roads[0] = 10;
-    r4.origin_roads[1] = 5;
-    r4.destination_roads[0] = 6;
+    r4.destination_road_count = 2;
+    r4.origin_roads[0] = 5;
+    r4.origin_roads[1] = 7;
+    r4.destination_roads[0] = 8;
+    r4.destination_roads[1] = 9;
 
     road_link r5;
     r5.origin_road_count = 1;
     r5.destination_road_count = 1;
-    r5.origin_roads[0] = 4;
-    r5.destination_roads[0] = 7;
+    r5.origin_roads[0] = 9;
+    r5.destination_roads[0] = 10;
 
     road_link r6;
-    r6.origin_road_count = 1;
+    r6.origin_road_count = 2;
     r6.destination_road_count = 1;
-    r6.origin_roads[0] = 6;
-    r6.destination_roads[0] = 8;
+    r6.origin_roads[0] = 3;
+    r6.origin_roads[1] = 10;
+    r6.destination_roads[0] = 11;
 
-    road_link r7;
-    r7.origin_road_count = 2;
-    r7.destination_road_count = 1;
-    r7.origin_roads[0] = 7;
-    r7.origin_roads[1] = 8;
-    r7.destination_roads[0] = 9;
-
-    this->road_link_count = 8;
+    this->road_link_count = 7;
     this->road_links = new road_link[this->road_link_count];
     this->road_links[0] = r0;
     this->road_links[1] = r1;
@@ -255,7 +201,75 @@ void Model::init_road_links()
     this->road_links[4] = r4;
     this->road_links[5] = r5;
     this->road_links[6] = r6;
-    this->road_links[7] = r7;
+
+    // braess test 1
+//    road_link r0;
+//    r0.origin_road_count = 1;
+//    r0.destination_road_count = 2;
+//    r0.origin_roads[0] = 0;
+//    r0.destination_roads[0] = 2;
+//    r0.destination_roads[1] = 3;
+
+//    road_link r1;
+//    r1.origin_road_count = 2;
+//    r1.destination_road_count = 1;
+//    r1.origin_roads[0] = 1;
+//    r1.origin_roads[1] = 2;
+//    r1.destination_roads[0] = 4;
+
+//    road_link r2;
+//    r2.origin_road_count = 1;
+//    r2.destination_road_count = 1;
+//    r2.origin_roads[0] = 3;
+//    r2.destination_roads[0] = 5;
+
+//    road_link r3;
+//    r3.origin_road_count = 1;
+//    r3.destination_road_count = 1;
+//    r3.origin_roads[0] = 4;
+//    r3.destination_roads[0] = 6;
+
+//    road_link r4;
+//    r4.origin_road_count = 2;
+//    r4.destination_road_count = 1;
+//    r4.origin_roads[0] = 5;
+//    r4.origin_roads[1] = 6;
+//    r4.destination_roads[0] = 7;
+
+
+//    this->road_link_count = 5;
+//    this->road_links = new road_link[this->road_link_count];
+//    this->road_links[0] = r0;
+//    this->road_links[1] = r1;
+//    this->road_links[2] = r2;
+//    this->road_links[3] = r3;
+//    this->road_links[4] = r4;
+
+    // braess test 2
+//    road_link r0;
+//    r0.origin_road_count = 1;
+//    r0.destination_road_count = 1;
+//    r0.origin_roads[0] = 0;
+//    r0.destination_roads[0] = 2;
+
+//    road_link r1;
+//    r1.origin_road_count = 1;
+//    r1.destination_road_count = 1;
+//    r1.origin_roads[0] = 1;
+//    r1.destination_roads[0] = 3;
+
+//    road_link r2;
+//    r2.origin_road_count = 2;
+//    r2.destination_road_count = 1;
+//    r2.origin_roads[0] = 2;
+//    r2.origin_roads[1] = 3;
+//    r2.destination_roads[0] = 4;
+
+//    this->road_link_count = 3;
+//    this->road_links = new road_link[this->road_link_count];
+//    this->road_links[0] = r0;
+//    this->road_links[1] = r1;
+//    this->road_links[2] = r2;
 
     for(unsigned int x = 0; x < this->road_link_count; x++) // activate/deactivate road links
     {

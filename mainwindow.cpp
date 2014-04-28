@@ -520,6 +520,9 @@ void MainWindow::resizeEvent(QResizeEvent *)
     }
 }
 
+/**
+ * @brief MainWindow::on_actionPlotTrafficThroughput_triggered Plots traffic throughput in the model.
+ */
 void MainWindow::on_actionPlotTrafficThroughput_triggered()
 {
     if(this->plot_widget != 0)
@@ -529,7 +532,7 @@ void MainWindow::on_actionPlotTrafficThroughput_triggered()
     ui->plotLayout->removeWidget(this->plot_widget);
     ui->plotLayout->addWidget(this->plot_widget = new QCustomPlot(this->plot_widget));
     this->plot_widget->xAxis->setLabel("Time Steps");
-    this->plot_widget->xAxis->setRange(-10, 0);
+    this->plot_widget->xAxis->setRange(-20, 0);
     this->plot_widget->yAxis->setLabel("Traffic Throughput (Vehicles)");
     this->plot_widget->yAxis->setRange(0, (this->model->get_output_road_count() * 2));
     this->plot_widget->setMinimumWidth(this->frameSize().width() / 2);
