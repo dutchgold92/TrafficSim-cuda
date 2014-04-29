@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->gfx->addAction(ui->actionPlotInputDensity);
     ui->gfx->addAction(ui->actionPlotInputAndOverallDensity);
     ui->gfx->addAction(ui->actionPlotTrafficThroughput);
+    ui->gfx->addAction(ui->actionPlotComputationTime);
     ui->gfx->setScene(this->scene);
     ui->gfx->show();
     this->follow_vehicle_road = -1;
@@ -417,7 +418,12 @@ void MainWindow::plot()
             case traffic_throughput:
                 this->plot_data_y.pop_front();
                 this->plot_data_y.push_back(this->model->get_vehicles_out_last_generation());
-            this->plot_widget->graph(0)->setData(this->plot_data_x, this->plot_data_y);
+                this->plot_widget->graph(0)->setData(this->plot_data_x, this->plot_data_y);
+                break;
+            case compute_time:
+                this->plot_data_y.pop_front();
+                this->plot_data_y.push_back(this->model->get_last_evolution_time());
+                this->plot_widget->graph(0)->setData(this->plot_data_x, this->plot_data_y);
                 break;
         }
 
@@ -544,6 +550,40 @@ void MainWindow::on_actionPlotTrafficThroughput_triggered()
     for(signed int i = 0; i < this->plot_time_steps; i++)
     {
         this->plot_data_x.push_back(i - this->plot_time_steps);
+        this->plot_data_y.push_back(0);
+    }
+
+    this->plot_widget->addGraph();
+    this->plot();
+    this->plot_widget->show();
+    ui->closePlotButton->show();
+}
+
+/**
+ * @brief MainWindow::on_actionPlotComputationTime_triggered Plots time taken to compute model
+ * in each of the last 20 generations.
+ */
+void MainWindow::on_actionPlotComputationTime_triggered()
+{
+    if(this->plot_widget != 0)
+        this->on_closePlotButton_pressed();
+
+    this->plot_type = compute_time;
+    ui->plotLayout->removeWidget(this->plot_widget);
+    ui->plotLayout->addWidget(this->plot_widget = new QCustomPlot(this->plot_widget));
+    this->plot_widget->xAxis->setLabel("Model Generation");
+    this->plot_widget->xAxis->setRange(-20, 0);
+    this->plot_widget->yAxis->setLabel("Computation Time (ms)");
+    this->plot_widget->yAxis->setRange(0, (this->model->get_last_evolution_time() * 1.5));
+    this->plot_widget->setMinimumWidth(this->frameSize().width() / 2);
+    this->plot_widget->setMinimumHeight(this->frameSize().height() / 2);
+    this->plot_data_x.clear();
+    this->plot_data_y.clear();
+    this->plot_data_y2.clear();
+
+    for(signed int i = 0; i < 20; i++)
+    {
+        this->plot_data_x.push_back(i - 20);
         this->plot_data_y.push_back(0);
     }
 

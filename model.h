@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <vector>
+#include <QElapsedTimer>
 
 extern "C"
 void cuda_init(signed int **cells, unsigned int *road_lengths, unsigned int _max_road_length, unsigned int _road_count, unsigned int _max_speed, road_link *road_links, unsigned int _road_link_count, unsigned int *_input_roads, unsigned int _input_road_count, unsigned int *_output_roads, unsigned int _output_road_count);
@@ -42,6 +43,7 @@ public:
     void set_realistic_traffic_synthesis(bool realistic_traffic_synthesis);
     unsigned int get_output_road_count();
     unsigned int get_vehicles_out_last_generation();
+    unsigned int get_last_evolution_time();
 private:
     signed int **cells;
     road_link *road_links;
@@ -60,6 +62,7 @@ private:
     unsigned int vehicles_out_last_generation;
     unsigned long generation;
     bool realistic_traffic_synthesis;
+    unsigned int last_evolution_time;
     void init();
     void init_roads();
     void init_road_links();

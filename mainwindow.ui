@@ -245,7 +245,7 @@
      <x>0</x>
      <y>0</y>
      <width>713</width>
-     <height>20</height>
+     <height>25</height>
     </rect>
    </property>
   </widget>
@@ -263,6 +263,14 @@
   <action name="actionPlotTrafficThroughput">
    <property name="text">
     <string>Plot Traffic Throughput</string>
+   </property>
+  </action>
+  <action name="actionPlotComputationTime">
+   <property name="text">
+    <string>Plot Model Computation Time</string>
+   </property>
+   <property name="toolTip">
+    <string>Plot Model Computation Time</string>
    </property>
   </action>
  </widget>
