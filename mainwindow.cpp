@@ -574,7 +574,7 @@ void MainWindow::on_actionPlotComputationTime_triggered()
     this->plot_widget->xAxis->setLabel("Model Generation");
     this->plot_widget->xAxis->setRange(-20, 0);
     this->plot_widget->yAxis->setLabel("Computation Time (ms)");
-    this->plot_widget->yAxis->setRange(0, (this->model->get_last_evolution_time() * 1.5));
+    this->plot_widget->yAxis->setRange(0, (this->model->get_last_evolution_time() * 10));
     this->plot_widget->setMinimumWidth(this->frameSize().width() / 2);
     this->plot_widget->setMinimumHeight(this->frameSize().height() / 2);
     this->plot_data_x.clear();
