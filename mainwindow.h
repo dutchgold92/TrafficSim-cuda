@@ -71,7 +71,6 @@ private slots:
     void resizeEvent(QResizeEvent *);
     void on_actionPlotTrafficThroughput_triggered();
     void on_actionPlotComputationTime_triggered();
-
 signals:
     void model_updated();
 };
